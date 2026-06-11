@@ -15,9 +15,20 @@ if (!fs.existsSync(releaseDir)) {
 fs.mkdirSync(outDir, { recursive: true })
 let copied = 0
 
+const downloadBaseUrl = process.env.PETORY_DOWNLOAD_BASE_URL ?? 'https://api.petory.chat/downloads'
+
 for (const file of fs.readdirSync(releaseDir)) {
   if (file.startsWith('latest') && file.endsWith('.yml')) {
-    fs.copyFileSync(path.join(releaseDir, file), path.join(outDir, file))
+    let content = fs.readFileSync(path.join(releaseDir, file), 'utf8')
+    content = content.replace(
+      /url:\s+(?!https?:\/\/)(\S+\.(?:dmg|exe|zip))/g,
+      `url: ${downloadBaseUrl}/$1`
+    )
+    content = content.replace(
+      /^path:\s+(?!https?:\/\/)(\S+\.(?:dmg|exe|zip))\s*$/gm,
+      `path: ${downloadBaseUrl}/$1`
+    )
+    fs.writeFileSync(path.join(outDir, file), content, 'utf8')
     console.log(`Copied ${file} → website/releases/`)
     copied++
   }

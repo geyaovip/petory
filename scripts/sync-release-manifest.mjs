@@ -8,6 +8,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')
 const version = pkg.version
 const githubRepo = process.env.PETORY_GITHUB_REPO ?? 'geyaovip/petory'
 const releaseBaseUrl = process.env.PETORY_RELEASE_BASE_URL ?? `https://github.com/${githubRepo}/releases/download/v${version}`
+const downloadBaseUrl = process.env.PETORY_DOWNLOAD_BASE_URL ?? 'https://api.petory.chat/downloads'
 
 const releaseDir = path.join(root, 'release')
 const macDmg =
@@ -25,7 +26,7 @@ const manifest = {
   releasedAt: new Date().toISOString().slice(0, 10),
   mac: {
     fileName: macFileName,
-    url: `${releaseBaseUrl}/${macFileName}`,
+    url: macDmg ? `${downloadBaseUrl}/${macFileName}` : `${releaseBaseUrl}/${macFileName}`,
     sizeLabel: macSizeLabel
   },
   win: {

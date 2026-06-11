@@ -3,7 +3,7 @@
   "releasedAt": "2026-06-11",
   "mac": {
     "fileName": "Petory-2.4.0-arm64.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.0/Petory-2.4.0-arm64.dmg",
+    "url": "https://api.petory.chat/downloads/Petory-2.4.0-arm64.dmg",
     "sizeLabel": "~104 MB"
   },
   "win": {

@@ -59,6 +59,13 @@ export function createApp() {
       rewriteRequestPath: (p) => p.replace(/^\/admin/, '') || '/index.html'
     })
   )
+  app.use(
+    '/downloads/*',
+    serveStatic({
+      root: path.join(process.cwd(), 'public/downloads'),
+      rewriteRequestPath: (p) => p.replace(/^\/downloads/, '')
+    })
+  )
 
   app.get('/admin', (c) => c.redirect('/admin/'))
 

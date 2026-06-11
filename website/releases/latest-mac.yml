@@ -1,8 +1,8 @@
 version: 2.4.0
 files:
-  - url: Petory-2.4.0-arm64.dmg
+  - url: https://api.petory.chat/downloads/Petory-2.4.0-arm64.dmg
     sha512: EFGB0vo60cEHancvC/ZP+tRx9NFbbcSfhA67BpC1ZQZ1Dtla4lhfq2BZbBJfKlMqbCM6fXzx03ir5/gTdZ4UbA==
     size: 109319352
-path: Petory-2.4.0-arm64.dmg
+path: https://api.petory.chat/downloads/Petory-2.4.0-arm64.dmg
 sha512: EFGB0vo60cEHancvC/ZP+tRx9NFbbcSfhA67BpC1ZQZ1Dtla4lhfq2BZbBJfKlMqbCM6fXzx03ir5/gTdZ4UbA==
 releaseDate: '2026-06-11T10:23:05.712Z'
