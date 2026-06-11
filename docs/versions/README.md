@@ -32,4 +32,3 @@ V0.1 → V0.2 → V0.3 → V0.4 → V0.5 → V1.0 → V1.1+
 - 维护约定：[docs/MAINTENANCE.md](../MAINTENANCE.md)
 - **UI 设计规范：** [UI-DESIGN.md](../UI-DESIGN.md)
 - **管理端（API + 运营后台）：** [../admin/README.md](../admin/README.md) — 规划稿，未开发
-- Cursor 规则：[.cursor/rules/](../../.cursor/rules/)

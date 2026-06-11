@@ -553,4 +553,3 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 - [docs/README.md](./README.md)
 - [docs/MAINTENANCE.md](./MAINTENANCE.md)
 - [versions/](./versions/README.md)
-- [.cursor/rules/ui-design.mdc](../.cursor/rules/ui-design.mdc)
