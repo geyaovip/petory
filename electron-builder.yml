@@ -18,11 +18,13 @@ publish:
   url: https://petory.chat/releases
 mac:
   category: public.app-category.lifestyle
+  icon: build/icon.icns
   target:
     - dmg
   hardenedRuntime: true
   gatekeeperAssess: false
 win:
+  icon: build/icon.png
   target:
     - nsis
 nsis:

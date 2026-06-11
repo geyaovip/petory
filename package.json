@@ -24,6 +24,7 @@
     "pack:win": "npm run build && electron-builder --win",
     "qa": "node scripts/qa-release.mjs",
     "qa:smoke": "node scripts/qa-smoke.mjs",
+    "sync:brand": "node scripts/sync-brand-assets.mjs",
     "release:sync": "node scripts/sync-release-manifest.mjs",
     "release:prepare": "npm run release:sync && node scripts/copy-update-feed.mjs && npm run qa",
     "website:preview": "npx --yes serve website -p 5180",

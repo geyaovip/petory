@@ -31,7 +31,11 @@ const requiredFiles = [
   'scripts/sync-release-manifest.mjs',
   'scripts/copy-update-feed.mjs',
   'scripts/rembg_remove.py',
-  'resources/sample/pet.svg'
+  'resources/sample/pet.svg',
+  'build/icon.png',
+  'build/icon.icns',
+  'website/assets/logo.png',
+  'website/favicon.png'
 ]
 
 for (const file of requiredFiles) {

@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { ERROR_MESSAGES } from '../../src/shared/constants'
@@ -760,9 +760,20 @@ async function bootstrapOnLaunch(): Promise<void> {
   bootstrapMainApp()
 }
 
+function applyAppIcon(): void {
+  const iconPath = path.join(__dirname, '../../build/icon.png')
+  if (!fs.existsSync(iconPath)) return
+  const icon = nativeImage.createFromPath(iconPath)
+  if (icon.isEmpty()) return
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(icon)
+  }
+}
+
 app.whenReady().then(async () => {
   if (process.platform === 'darwin') {
     app.dock.show()
+    applyAppIcon()
   }
 
   initCrashReporter()
