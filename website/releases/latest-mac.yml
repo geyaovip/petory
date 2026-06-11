@@ -1,8 +1,8 @@
 version: 2.4.0
 files:
-  - url: https://api.petory.chat/downloads/Petory-2.4.0-arm64.dmg
-    sha512: EFGB0vo60cEHancvC/ZP+tRx9NFbbcSfhA67BpC1ZQZ1Dtla4lhfq2BZbBJfKlMqbCM6fXzx03ir5/gTdZ4UbA==
-    size: 109319352
-path: https://api.petory.chat/downloads/Petory-2.4.0-arm64.dmg
-sha512: EFGB0vo60cEHancvC/ZP+tRx9NFbbcSfhA67BpC1ZQZ1Dtla4lhfq2BZbBJfKlMqbCM6fXzx03ir5/gTdZ4UbA==
-releaseDate: '2026-06-11T10:23:05.712Z'
+  - url: https://github.com/geyaovip/petory/releases/download/v2.4.0/Petory-2.4.0-universal.dmg
+    sha512: cET4/OCfsHqK1Ism3Ae5IgzRFqwSHS+D9yc8H+OirGbD+Al3z0Prw/lvmi1cr2sXiNZgnBEi0EGoMUygD6vnZw==
+    size: 190579915
+path: https://github.com/geyaovip/petory/releases/download/v2.4.0/Petory-2.4.0-universal.dmg
+sha512: cET4/OCfsHqK1Ism3Ae5IgzRFqwSHS+D9yc8H+OirGbD+Al3z0Prw/lvmi1cr2sXiNZgnBEi0EGoMUygD6vnZw==
+releaseDate: '2026-06-11T10:55:55.217Z'
