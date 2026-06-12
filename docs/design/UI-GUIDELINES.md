@@ -531,7 +531,7 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 3. 不透明蓝色 squircle 主体保留；半透明且确认为蓝色的边缘像素可加固为不透明  
 4. 图形内部白色（猫脸等）保留；app-icon 居中到透明正方形后 `contain` 缩放，禁止 crop  
 5. 边缘 alpha 羽化 + 小图超采样下采样，避免硬切 alpha 产生锯齿；禁止将半透明蓝边直接 snap 到 255  
-6. Dock / 安装包大图（≥128px）内缩至画布 **84%**，与 macOS 系统图标视觉尺寸一致，避免 Dock 里显得偏大  
+6. **仅 mac 客户端** Dock / `icon.icns` / 运行时 `apple-touch-icon`（`src/renderer/public`）内缩至 **84%**；官网、管理端、favicon、Windows `build/icon.png` 仍用 **96.8%** 裁边  
 
 **Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 

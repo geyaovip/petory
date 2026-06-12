@@ -51,12 +51,10 @@ const FRINGE_LIGHT_MIN = 155
 const FRINGE_MAX_SAT = 95
 const EDGE_RING_DEPTH = 5
 const EDGE_PALE_LIGHT = 162
-/** macOS Dock icons need ~16% transparent margin or they look oversized vs system apps. */
-function iconInsetForSize(size) {
-  if (size >= 128) return 0.84
-  if (size >= 48) return 0.88
-  return 0.9
-}
+/** Minimal inset — trims pale outer ring only (website / admin / tabs / Windows). */
+const ICON_TRIM_INSET = 0.968
+/** macOS Dock safe zone — only for .icns + renderer Dock runtime icon. */
+const MAC_DOCK_INSET = 0.84
 
 function isWhiteish(r, g, b, a) {
   if (a < 20) return true
@@ -463,9 +461,9 @@ async function writeTrimmedWordmark(keyed, toPath) {
   console.log(`✓ ${path.relative(root, toPath)}`)
 }
 
-/** Scale with contain; inset matches macOS Dock safe zone (~84% for large icons). */
-function resizeAppIcon(trimmed, size) {
-  const inner = Math.max(1, Math.round(size * iconInsetForSize(size)))
+/** Scale with contain; optional inset adds transparent margin (see ICON_TRIM_INSET / MAC_DOCK_INSET). */
+function resizeAppIcon(trimmed, size, inset = 1) {
+  const inner = Math.max(1, Math.round(size * inset))
   const pad = size - inner
   const padTop = Math.floor(pad / 2)
   const padLeft = Math.floor(pad / 2)
@@ -492,11 +490,11 @@ function supersampleFactor(size) {
   return 1
 }
 
-async function writeAppIconAlpha(trimmed, dest, size) {
+async function writeAppIconAlpha(trimmed, dest, size, { inset = ICON_TRIM_INSET } = {}) {
   const factor = supersampleFactor(size)
   const renderSize = size * factor
 
-  const { data, info } = await resizeAppIcon(trimmed, renderSize)
+  const { data, info } = await resizeAppIcon(trimmed, renderSize, inset)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
@@ -582,8 +580,8 @@ fs.mkdirSync(iconset, { recursive: true })
 for (const size of [16, 32, 128, 256, 512]) {
   const out1 = path.join(iconset, `icon_${size}x${size}.png`)
   const out2 = path.join(iconset, `icon_${size}x${size}@2x.png`)
-  await writeAppIconAlpha(appIconTrimmed, out1, size)
-  await writeAppIconAlpha(appIconTrimmed, out2, size * 2)
+  await writeAppIconAlpha(appIconTrimmed, out1, size, { inset: MAC_DOCK_INSET })
+  await writeAppIconAlpha(appIconTrimmed, out2, size * 2, { inset: MAC_DOCK_INSET })
 }
 
 const iconIcns = path.join(brandDir, 'icon.icns')
@@ -598,11 +596,9 @@ try {
 
 fs.rmSync(iconset, { recursive: true, force: true })
 
-const webFaviconMirrors = (name) => [
-  `website/${name}`,
-  `src/renderer/public/${name}`,
-  `server/admin/public/${name}`
-]
+const webFaviconMirrors = (name) => [`website/${name}`, `server/admin/public/${name}`]
+
+const rendererPublicMirrors = (name) => [`src/renderer/public/${name}`]
 
 await mirrorFile('logo.png', [
   'website/assets/logo.png',
@@ -611,10 +607,17 @@ await mirrorFile('logo.png', [
 ])
 
 for (const size of [16, 32, 48]) {
-  await mirrorFile(`favicon-${size}.png`, webFaviconMirrors(`favicon-${size}.png`))
+  const name = `favicon-${size}.png`
+  await mirrorFile(name, [...webFaviconMirrors(name), ...rendererPublicMirrors(name)])
 }
-await mirrorFile('favicon.png', webFaviconMirrors('favicon.png'))
+await mirrorFile('favicon.png', [...webFaviconMirrors('favicon.png'), ...rendererPublicMirrors('favicon.png')])
 await mirrorFile('apple-touch-icon.png', webFaviconMirrors('apple-touch-icon.png'))
+await writeAppIconAlpha(
+  appIconTrimmed,
+  path.join(root, 'src/renderer/public/apple-touch-icon.png'),
+  180,
+  { inset: MAC_DOCK_INSET }
+)
 await mirrorFile('icon.png', ['build/icon.png'])
 if (fs.existsSync(iconIcns)) {
   await mirrorFile('icon.icns', ['build/icon.icns'])
