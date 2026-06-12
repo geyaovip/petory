@@ -1,10 +1,10 @@
 {
   "version": "2.4.1",
-  "releasedAt": "2026-06-09",
+  "releasedAt": "2026-06-12",
   "mac": {
     "fileName": "Petory-2.4.1-universal.dmg",
     "url": "https://github.com/geyaovip/petory/releases/download/v2.4.1/Petory-2.4.1-universal.dmg",
-    "sizeLabel": "~182 MB"
+    "sizeLabel": "~183 MB"
   },
   "win": {
     "fileName": "Petory-Setup-2.4.1.exe",
