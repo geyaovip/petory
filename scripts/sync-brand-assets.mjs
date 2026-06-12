@@ -152,19 +152,6 @@ async function writeTrimmedWordmark(keyed, toPath) {
   console.log(`✓ ${path.relative(root, toPath)}`)
 }
 
-async function sampleAppIconBlue(keyed) {
-  const { data, info } = await sharp(keyed).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-  for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      const i = (y * info.width + x) * info.channels
-      if (data[i + 3] > 128) {
-        return { r: data[i], g: data[i + 1], b: data[i + 2], alpha: 255 }
-      }
-    }
-  }
-  return { r: 70, g: 150, b: 253, alpha: 255 }
-}
-
 function zoomedPipeline(trimmed, size) {
   const zoom = zoomForSize(size)
   const zoomed = Math.max(size, Math.round(size * zoom))
@@ -179,15 +166,11 @@ async function writeAppIconAlpha(trimmed, dest, size) {
   await zoomedPipeline(trimmed, size).png().toFile(dest)
 }
 
-async function writeFaviconSolid(trimmed, dest, size, background) {
-  await zoomedPipeline(trimmed, size).flatten({ background }).png().toFile(dest)
-}
-
-async function writeFaviconSet(trimmed, background, outDir) {
+async function writeFaviconSet(trimmed, outDir) {
   fs.mkdirSync(outDir, { recursive: true })
   for (const size of [16, 32, 48]) {
     const dest = path.join(outDir, `favicon-${size}.png`)
-    await writeFaviconSolid(trimmed, dest, size, background)
+    await writeAppIconAlpha(trimmed, dest, size)
     console.log(`✓ ${path.relative(root, dest)}`)
   }
   const appleTouch = path.join(outDir, 'apple-touch-icon.png')
@@ -220,9 +203,8 @@ await writeTrimmedWordmark(wordmarkKeyed, path.join(brandDir, 'logo.png'))
 
 const appIconKeyed = await loadKeyedSource(sources.appIcon)
 const appIconTrimmed = await trimmedBuffer(appIconKeyed)
-const appIconBlue = await sampleAppIconBlue(appIconKeyed)
 
-await writeFaviconSet(appIconTrimmed, appIconBlue, brandDir)
+await writeFaviconSet(appIconTrimmed, brandDir)
 
 const iconPng = path.join(brandDir, 'icon.png')
 await writeAppIconAlpha(appIconTrimmed, iconPng, 1024)

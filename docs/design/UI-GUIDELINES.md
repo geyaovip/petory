@@ -531,7 +531,7 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 | 派生资产 | 场景 |
 |----------|------|
 | `logo.png` | 官网导航、客户端登录、管理端登录/侧栏（高度 44–56px） |
-| `favicon-16/32/48.png` | 浏览器标签（**实色蓝底** 小图，避免透明区 RGB 脏数据） |
+| `favicon-16/32/48.png` | 浏览器标签（**透明圆角 squircle**，与 `apple-touch-icon` 同源） |
 | `apple-touch-icon.png` | 客户端 Dock 运行时图标（**保留透明圆角**） |
 | `icon.png` / `icon.icns` | 安装包与系统图标（**保留透明圆角**，与源图 squircle 一致） |
 
@@ -541,7 +541,7 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 |------|-----|------|
 | `website/assets/` + `website/favicon*` | 提交 | 官网静态站，`main` 推送后 CF Pages 自动部署 |
 | `src/renderer/public/` | 忽略 | 客户端 dev/build 静态资源，`npm install` 时 sync |
-| `server/admin/public/` | 忽略 | 管理端静态资源，Docker 从 `brand/generated` 复制 |
+| `server/admin/public/` | 提交 | 管理端静态资源，随 `git pull` + Docker 重建更新 |
 | `build/icon.*` | 忽略 | electron-builder 输入，pack 前 sync |
 
 **不需要保留的目录：**
@@ -551,8 +551,6 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 | `out/renderer/*` | electron-vite 构建输出，由 `public/` 复制，可随时删 |
 | `build/icon.iconset/` | icns 中间文件，sync 结束即删 |
 | `release/*` | 安装包产物 |
-
-源图透明像素含 `RGB(255,255,255,0)` 时不得直接 `flatten`，须先采样不透明蓝色像素。
 
 **图标分工（必须遵守）：**
 - **登录页 / 导航** → 横版 `logo.png`
