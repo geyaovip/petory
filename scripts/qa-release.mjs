@@ -32,10 +32,10 @@ const requiredFiles = [
   'scripts/copy-update-feed.mjs',
   'scripts/rembg_remove.py',
   'resources/sample/pet.svg',
-  'build/icon.png',
-  'build/icon.icns',
-  'website/assets/logo.png',
-  'website/favicon.png'
+  'brand/generated/logo.png',
+  'brand/generated/favicon.png',
+  'brand/generated/icon.png',
+  'brand/generated/icon.icns'
 ]
 
 for (const file of requiredFiles) {

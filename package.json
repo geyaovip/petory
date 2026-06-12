@@ -7,6 +7,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "npm run sync:brand",
     "dev": "electron-vite dev",
     "dev:stack": "node scripts/dev-stack.mjs",
     "dev:docker": "node scripts/dev-docker.mjs",
@@ -16,7 +17,7 @@
     "docker:logs": "docker compose logs -f",
     "setup:dev": "npm run setup:rembg && npm run server:install && npm run server:db",
     "setup:rembg": "python3 -c \"from rembg import remove\" 2>/dev/null || pip3 install rembg pillow onnxruntime",
-    "build": "electron-vite build",
+    "build": "npm run sync:brand && electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json",
     "pack": "npm run sync:brand && npm run build && electron-builder",

@@ -16,8 +16,10 @@ Cloudflare Pages 项目名为 `petory`，已连接 GitHub 仓库
 - 正式域名：`https://petory.chat`
 - Pages 域名：`https://petory.pages.dev`
 
-Pages 构建设置：框架预设为 `None`，构建命令留空，输出目录为
-`website`。
+Pages 构建设置：框架预设为 `None`，构建命令留空，输出目录为 `website`。
+`main` 推送后自动部署，无需额外操作。
+
+更新 logo 后运行 `npm run sync:brand`，一并提交 `brand/generated/` 与 `website/` 中的图标文件。
 
 ## 发布流程
 

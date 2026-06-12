@@ -7,6 +7,7 @@ import sharp from 'sharp'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
 const srcDir = path.join(root, 'petory_logo')
+const brandDir = path.join(root, 'brand', 'generated')
 
 /**
  * Brand asset map — only edit sources in petory_logo/, then run npm run sync:brand
@@ -15,12 +16,20 @@ const srcDir = path.join(root, 'petory_logo')
  *   petory_logo/wordmark.png   — horizontal logo, white background
  *   petory_logo/app-icon.png   — square app icon, white background
  *
- * GENERATED (do not hand-edit):
+ * CANONICAL OUTPUT (git-tracked):
+ *   brand/generated/*   — all derived PNG / ICNS
+ *
+ * MIRRORS (gitignored, copied on sync — do not hand-edit):
  *   logo.png          → website/assets, src/renderer/public, server/admin/public
  *   favicon-*.png     → website/, src/renderer/public, server/admin/public
  *   apple-touch-icon  → same three (Dock runtime, transparent squircle)
  *   build/icon.png    → electron-builder Windows + fallback
  *   build/icon.icns   → electron-builder macOS
+ *
+ * NOT NEEDED (build artifacts — delete freely):
+ *   out/renderer/*    — electron-vite copies from src/renderer/public on build
+ *   build/icon.iconset — temporary icns input, removed after sync
+ *   release/*         — packaged installers
  */
 
 const sources = {
@@ -105,7 +114,6 @@ function keyWhiteBackgroundRgba(data, width, height) {
       continue
     }
 
-    // Restore enclosed near-white holes left by bad prior exports (e.g. cat muzzle).
     if (a < 20 && r >= WHITE_MIN - 10 && g >= WHITE_MIN - 10 && b >= WHITE_MIN - 10) {
       data[i + 3] = 255
       continue
@@ -139,10 +147,9 @@ async function trimmedBuffer(keyed) {
 }
 
 async function writeTrimmedWordmark(keyed, toPath) {
-  const to = path.join(root, toPath)
-  fs.mkdirSync(path.dirname(to), { recursive: true })
-  await sharp(keyed).trim({ threshold: TRIM_THRESHOLD }).png().toFile(to)
-  console.log(`✓ ${toPath}`)
+  fs.mkdirSync(path.dirname(toPath), { recursive: true })
+  await sharp(keyed).trim({ threshold: TRIM_THRESHOLD }).png().toFile(toPath)
+  console.log(`✓ ${path.relative(root, toPath)}`)
 }
 
 async function sampleAppIconBlue(keyed) {
@@ -190,6 +197,15 @@ async function writeFaviconSet(trimmed, background, outDir) {
   console.log(`✓ ${path.relative(root, path.join(outDir, 'favicon.png'))}`)
 }
 
+async function mirrorFile(relativeName, destinations) {
+  const src = path.join(brandDir, relativeName)
+  for (const dest of destinations) {
+    const to = path.join(root, dest)
+    fs.mkdirSync(path.dirname(to), { recursive: true })
+    await fs.promises.copyFile(src, to)
+  }
+}
+
 for (const file of Object.values(sources)) {
   if (!fs.existsSync(path.join(srcDir, file))) {
     console.error(`✗ Expected ${path.join(srcDir, file)}`)
@@ -197,30 +213,23 @@ for (const file of Object.values(sources)) {
   }
 }
 
+fs.mkdirSync(brandDir, { recursive: true })
+
 const wordmarkKeyed = await loadKeyedSource(sources.wordmark)
-for (const target of [
-  'website/assets/logo.png',
-  'src/renderer/public/logo.png',
-  'server/admin/public/logo.png'
-]) {
-  await writeTrimmedWordmark(wordmarkKeyed, target)
-}
+await writeTrimmedWordmark(wordmarkKeyed, path.join(brandDir, 'logo.png'))
 
 const appIconKeyed = await loadKeyedSource(sources.appIcon)
 const appIconTrimmed = await trimmedBuffer(appIconKeyed)
 const appIconBlue = await sampleAppIconBlue(appIconKeyed)
 
-await writeFaviconSet(appIconTrimmed, appIconBlue, path.join(root, 'website'))
-await writeFaviconSet(appIconTrimmed, appIconBlue, path.join(root, 'src/renderer/public'))
-await writeFaviconSet(appIconTrimmed, appIconBlue, path.join(root, 'server/admin/public'))
+await writeFaviconSet(appIconTrimmed, appIconBlue, brandDir)
+
+const iconPng = path.join(brandDir, 'icon.png')
+await writeAppIconAlpha(appIconTrimmed, iconPng, 1024)
+console.log(`✓ ${path.relative(root, iconPng)}`)
 
 const buildDir = path.join(root, 'build')
 fs.mkdirSync(buildDir, { recursive: true })
-
-const iconPng = path.join(buildDir, 'icon.png')
-await writeAppIconAlpha(appIconTrimmed, iconPng, 1024)
-console.log('✓ build/icon.png')
-
 const iconset = path.join(buildDir, 'icon.iconset')
 if (fs.existsSync(iconset)) {
   fs.rmSync(iconset, { recursive: true, force: true })
@@ -234,13 +243,38 @@ for (const size of [16, 32, 128, 256, 512]) {
   await writeAppIconAlpha(appIconTrimmed, out2, size * 2)
 }
 
+const iconIcns = path.join(brandDir, 'icon.icns')
 try {
-  execSync(`iconutil -c icns "${iconset}" -o "${path.join(buildDir, 'icon.icns')}"`, {
+  execSync(`iconutil -c icns "${iconset}" -o "${iconIcns}"`, {
     stdio: 'inherit'
   })
-  console.log('✓ build/icon.icns')
+  console.log(`✓ ${path.relative(root, iconIcns)}`)
 } catch {
   console.warn('⚠ iconutil failed — build/icon.png is still available for electron-builder')
 }
 
-console.log('Brand assets synced from petory_logo/')
+fs.rmSync(iconset, { recursive: true, force: true })
+
+const webFaviconMirrors = (name) => [
+  `website/${name}`,
+  `src/renderer/public/${name}`,
+  `server/admin/public/${name}`
+]
+
+await mirrorFile('logo.png', [
+  'website/assets/logo.png',
+  'src/renderer/public/logo.png',
+  'server/admin/public/logo.png'
+])
+
+for (const size of [16, 32, 48]) {
+  await mirrorFile(`favicon-${size}.png`, webFaviconMirrors(`favicon-${size}.png`))
+}
+await mirrorFile('favicon.png', webFaviconMirrors('favicon.png'))
+await mirrorFile('apple-touch-icon.png', webFaviconMirrors('apple-touch-icon.png'))
+await mirrorFile('icon.png', ['build/icon.png'])
+if (fs.existsSync(iconIcns)) {
+  await mirrorFile('icon.icns', ['build/icon.icns'])
+}
+
+console.log('Brand assets synced: petory_logo/ → brand/generated/ → deployment mirrors')

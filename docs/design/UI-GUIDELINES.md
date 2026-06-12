@@ -517,21 +517,40 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 
 ### 15.5 品牌资产
 
-**唯一源目录：** `petory_logo/`（仅 2 张**白底**源图，由 `npm run sync:brand` 派生全部产物；勿在其他目录存放副本或手改派生图）
+**唯一源目录：** `petory_logo/`（仅 2 张**白底**源图；勿在其他目录手改派生图）
 
 | 源文件 | 说明 |
 |--------|------|
-| `wordmark.png` | 横版 logo（白底）→ 各端 `logo.png` |
+| `wordmark.png` | 横版 logo（白底）→ `brand/generated/logo.png` |
 | `app-icon.png` | 方形 app 图标（白底）→ favicon / Dock / 安装包 |
 
 处理规则：从边缘泛洪去除白色背景变透明；图形内部的白色（如猫脸）保留；其他颜色不动。
+
+**Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 
 | 派生资产 | 场景 |
 |----------|------|
 | `logo.png` | 官网导航、客户端登录、管理端登录/侧栏（高度 44–56px） |
 | `favicon-16/32/48.png` | 浏览器标签（**实色蓝底** 小图，避免透明区 RGB 脏数据） |
 | `apple-touch-icon.png` | 客户端 Dock 运行时图标（**保留透明圆角**） |
-| `build/icon.png` / `icon.icns` | 安装包与系统图标（**保留透明圆角**，与源图 squircle 一致） |
+| `icon.png` / `icon.icns` | 安装包与系统图标（**保留透明圆角**，与源图 squircle 一致） |
+
+**部署镜像（由 sync 自动复制，勿手改）：**
+
+| 目录 | Git | 说明 |
+|------|-----|------|
+| `website/assets/` + `website/favicon*` | 提交 | 官网静态站，`main` 推送后 CF Pages 自动部署 |
+| `src/renderer/public/` | 忽略 | 客户端 dev/build 静态资源，`npm install` 时 sync |
+| `server/admin/public/` | 忽略 | 管理端静态资源，Docker 从 `brand/generated` 复制 |
+| `build/icon.*` | 忽略 | electron-builder 输入，pack 前 sync |
+
+**不需要保留的目录：**
+
+| 目录 | 说明 |
+|------|------|
+| `out/renderer/*` | electron-vite 构建输出，由 `public/` 复制，可随时删 |
+| `build/icon.iconset/` | icns 中间文件，sync 结束即删 |
+| `release/*` | 安装包产物 |
 
 源图透明像素含 `RGB(255,255,255,0)` 时不得直接 `flatten`，须先采样不透明蓝色像素。
 
