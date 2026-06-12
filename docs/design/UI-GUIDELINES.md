@@ -517,12 +517,14 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 
 ### 15.5 品牌资产
 
-**唯一源目录：** `petory_logo/`（仅 2 张源图，由 `npm run sync:brand` 派生全部产物，禁止在 `resources/` 等处再放副本）
+**唯一源目录：** `petory_logo/`（仅 2 张**白底**源图，由 `npm run sync:brand` 派生全部产物；勿在其他目录存放副本或手改派生图）
 
-| 源文件 | 派生产物 |
-|--------|----------|
-| `01_petory_primary_logo_transparent.png` | 各端 `logo.png`（横版 wordmark） |
-| `03_petory_app_icon_transparent.png` | `favicon-*.png`、`apple-touch-icon.png`、`build/icon.png`、`build/icon.icns` |
+| 源文件 | 说明 |
+|--------|------|
+| `wordmark.png` | 横版 logo（白底）→ 各端 `logo.png` |
+| `app-icon.png` | 方形 app 图标（白底）→ favicon / Dock / 安装包 |
+
+处理规则：从边缘泛洪去除白色背景变透明；图形内部的白色（如猫脸）保留；其他颜色不动。
 
 | 派生资产 | 场景 |
 |----------|------|

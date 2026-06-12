@@ -8,15 +8,30 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
 const srcDir = path.join(root, 'petory_logo')
 
-/** Single source of truth — do not add duplicate packs under resources/. */
+/**
+ * Brand asset map — only edit sources in petory_logo/, then run npm run sync:brand
+ *
+ * SOURCES (you maintain):
+ *   petory_logo/wordmark.png   — horizontal logo, white background
+ *   petory_logo/app-icon.png   — square app icon, white background
+ *
+ * GENERATED (do not hand-edit):
+ *   logo.png          → website/assets, src/renderer/public, server/admin/public
+ *   favicon-*.png     → website/, src/renderer/public, server/admin/public
+ *   apple-touch-icon  → same three (Dock runtime, transparent squircle)
+ *   build/icon.png    → electron-builder Windows + fallback
+ *   build/icon.icns   → electron-builder macOS
+ */
+
 const sources = {
-  wordmark: '01_petory_primary_logo_transparent.png',
-  appIcon: '03_petory_app_icon_transparent.png'
+  wordmark: 'wordmark.png',
+  appIcon: 'app-icon.png'
 }
 
 const TRIM_THRESHOLD = 12
+const WHITE_MIN = 245
+const WHITE_SPREAD = 18
 
-/** Modest zoom — trims transparent squircle corners + blue margin, not the cat. */
 const APP_ICON_ZOOM = {
   16: 1.2,
   32: 1.14,
@@ -32,28 +47,106 @@ function zoomForSize(size) {
   return APP_ICON_ZOOM[size] ?? (size <= 64 ? 1.12 : size <= 256 ? 1.06 : 1.04)
 }
 
-/** Remove transparent padding only — never crop visible artwork. */
-async function writeTrimmedPng(fromName, toPath) {
-  const from = path.join(srcDir, fromName)
-  const to = path.join(root, toPath)
+function isWhiteish(r, g, b, a) {
+  if (a < 20) return true
+  if (r < WHITE_MIN || g < WHITE_MIN || b < WHITE_MIN) return false
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  return max - min <= WHITE_SPREAD
+}
+
+/** Flood white / transparent from image edges — keeps interior whites (e.g. cat fur). */
+function keyWhiteBackgroundRgba(data, width, height) {
+  const channels = 4
+  const size = width * height
+  const bg = new Uint8Array(size)
+  const queue = []
+
+  const pushIfBg = (x, y) => {
+    const p = y * width + x
+    if (bg[p]) return
+    const i = p * channels
+    if (!isWhiteish(data[i], data[i + 1], data[i + 2], data[i + 3])) return
+    bg[p] = 1
+    queue.push(p)
+  }
+
+  for (let x = 0; x < width; x++) {
+    pushIfBg(x, 0)
+    pushIfBg(x, height - 1)
+  }
+  for (let y = 0; y < height; y++) {
+    pushIfBg(0, y)
+    pushIfBg(width - 1, y)
+  }
+
+  while (queue.length > 0) {
+    const p = queue.pop()
+    const x = p % width
+    const y = (p - x) / width
+    if (x > 0) pushIfBg(x - 1, y)
+    if (x < width - 1) pushIfBg(x + 1, y)
+    if (y > 0) pushIfBg(x, y - 1)
+    if (y < height - 1) pushIfBg(x, y + 1)
+  }
+
+  for (let p = 0; p < size; p++) {
+    const i = p * channels
+    const r = data[i]
+    const g = data[i + 1]
+    const b = data[i + 2]
+    const a = data[i + 3]
+
+    if (bg[p]) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+      continue
+    }
+
+    // Restore enclosed near-white holes left by bad prior exports (e.g. cat muzzle).
+    if (a < 20 && r >= WHITE_MIN - 10 && g >= WHITE_MIN - 10 && b >= WHITE_MIN - 10) {
+      data[i + 3] = 255
+      continue
+    }
+
+    if (a < 20) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+    }
+  }
+}
+
+async function loadKeyedSource(fileName) {
+  const from = path.join(srcDir, fileName)
   if (!fs.existsSync(from)) {
     throw new Error(`Missing source asset: ${from}`)
   }
-  fs.mkdirSync(path.dirname(to), { recursive: true })
-  await sharp(from).trim({ threshold: TRIM_THRESHOLD }).png().toFile(to)
-  console.log(`✓ ${toPath}`)
-}
 
-async function trimmedAppIconBuffer() {
-  return sharp(path.join(srcDir, sources.appIcon))
-    .trim({ threshold: TRIM_THRESHOLD })
+  const { data, info } = await sharp(from).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  keyWhiteBackgroundRgba(data, info.width, info.height)
+
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .png()
     .toBuffer()
 }
 
-/** Source PNG stores RGB=255 in transparent pixels — must not use for flatten. */
-async function sampleAppIconBlue(trimmed) {
-  const { data, info } = await sharp(trimmed).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+async function trimmedBuffer(keyed) {
+  return sharp(keyed).trim({ threshold: TRIM_THRESHOLD }).png().toBuffer()
+}
+
+async function writeTrimmedWordmark(keyed, toPath) {
+  const to = path.join(root, toPath)
+  fs.mkdirSync(path.dirname(to), { recursive: true })
+  await sharp(keyed).trim({ threshold: TRIM_THRESHOLD }).png().toFile(to)
+  console.log(`✓ ${toPath}`)
+}
+
+async function sampleAppIconBlue(keyed) {
+  const { data, info } = await sharp(keyed).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   for (let y = 0; y < info.height; y++) {
     for (let x = 0; x < info.width; x++) {
       const i = (y * info.width + x) * info.channels
@@ -75,12 +168,10 @@ function zoomedPipeline(trimmed, size) {
     .extract({ left: offset, top: offset, width: size, height: size })
 }
 
-/** Dock / installer / runtime: keep squircle alpha (transparent outer corners). */
 async function writeAppIconAlpha(trimmed, dest, size) {
   await zoomedPipeline(trimmed, size).png().toFile(dest)
 }
 
-/** Browser tab favicons: solid blue tile for legibility at 16–48px. */
 async function writeFaviconSolid(trimmed, dest, size, background) {
   await zoomedPipeline(trimmed, size).flatten({ background }).png().toFile(dest)
 }
@@ -100,24 +191,24 @@ async function writeFaviconSet(trimmed, background, outDir) {
 }
 
 for (const file of Object.values(sources)) {
-  const full = path.join(srcDir, file)
-  if (!fs.existsSync(full)) {
-    console.error(`✗ Expected ${full}`)
+  if (!fs.existsSync(path.join(srcDir, file))) {
+    console.error(`✗ Expected ${path.join(srcDir, file)}`)
     process.exit(1)
   }
 }
 
-const wordmarkTargets = [
+const wordmarkKeyed = await loadKeyedSource(sources.wordmark)
+for (const target of [
   'website/assets/logo.png',
   'src/renderer/public/logo.png',
   'server/admin/public/logo.png'
-]
-for (const target of wordmarkTargets) {
-  await writeTrimmedPng(sources.wordmark, target)
+]) {
+  await writeTrimmedWordmark(wordmarkKeyed, target)
 }
 
-const appIconTrimmed = await trimmedAppIconBuffer()
-const appIconBlue = await sampleAppIconBlue(appIconTrimmed)
+const appIconKeyed = await loadKeyedSource(sources.appIcon)
+const appIconTrimmed = await trimmedBuffer(appIconKeyed)
+const appIconBlue = await sampleAppIconBlue(appIconKeyed)
 
 await writeFaviconSet(appIconTrimmed, appIconBlue, path.join(root, 'website'))
 await writeFaviconSet(appIconTrimmed, appIconBlue, path.join(root, 'src/renderer/public'))
