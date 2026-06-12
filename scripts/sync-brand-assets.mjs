@@ -40,9 +40,15 @@ const sources = {
 const TRIM_THRESHOLD = 12
 const WHITE_MIN = 245
 const WHITE_SPREAD = 18
-const FRINGE_MIN_ALPHA = 56
-const FRINGE_LIGHT_MIN = 200
-const FRINGE_MAX_SAT = 36
+/**
+ * Processing priority (app-icon):
+ *   1. Transparent squircle corners (contain resize, never crop)
+ *   2. Remove white background / halos aggressively
+ *   3. Keep the blue squircle fill — edge blues may be cleaned or strengthened,
+ *      but opaque blue body is never deleted
+ */
+const FRINGE_LIGHT_MIN = 165
+const FRINGE_MAX_SAT = 72
 
 function isWhiteish(r, g, b, a) {
   if (a < 20) return true
@@ -137,16 +143,32 @@ function decontaminateWhiteSpill(data, width, height) {
   }
 }
 
-function isWhiteFringe(r, g, b) {
+function pixelStats(r, g, b) {
   const max = Math.max(r, g, b)
   const min = Math.min(r, g, b)
-  const sat = max - min
-  const light = (r + g + b) / 3
-  return light >= FRINGE_LIGHT_MIN && sat <= FRINGE_MAX_SAT
+  return { max, min, sat: max - min, light: (r + g + b) / 3 }
 }
 
-/** Remove only white/cream halos — keep blue squircle anti-alias and transparent corners. */
-function pruneWhiteFringe(data, width, height) {
+/** Opaque blue squircle body — never delete. */
+function isCoreBlue(r, g, b) {
+  return b >= r + 12 && b >= g + 4 && b - Math.min(r, g) >= 28
+}
+
+function isPaleSpill(r, g, b, a) {
+  if (a === 0 || a === 255) return false
+  const { sat, light } = pixelStats(r, g, b)
+  if (light >= 248 && sat <= FRINGE_MAX_SAT) return true
+  if (light >= FRINGE_LIGHT_MIN && sat <= FRINGE_MAX_SAT && a < 210) return true
+  if (light >= 190 && sat <= 90 && a < 150) return true
+  if (a < 44 && light >= 130) return true
+  return false
+}
+
+/**
+ * Remove white / pale halos. May adjust edge blues contaminated by white matte.
+ * Does not remove opaque core blue squircle pixels.
+ */
+function cleanEdgeSpill(data, width, height) {
   const channels = 4
   const size = width * height
 
@@ -156,12 +178,17 @@ function pruneWhiteFringe(data, width, height) {
     const g = data[i + 1]
     const b = data[i + 2]
     const a = data[i + 3]
-    if (a === 0 || a === 255) continue
 
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
+    if (a === 255) continue
 
-    if (a <= 28 && max - min < 45 && max < 165) {
+    if (a === 0) continue
+
+    if (isCoreBlue(r, g, b) && a >= 140) {
+      data[i + 3] = 255
+      continue
+    }
+
+    if (isPaleSpill(r, g, b, a) || (a < 36 && !isCoreBlue(r, g, b))) {
       data[i] = 0
       data[i + 1] = 0
       data[i + 2] = 0
@@ -169,7 +196,7 @@ function pruneWhiteFringe(data, width, height) {
       continue
     }
 
-    if (a < 20) {
+    if (a < 200 && b < Math.max(r, g) - 28 && !isCoreBlue(r, g, b)) {
       data[i] = 0
       data[i + 1] = 0
       data[i + 2] = 0
@@ -177,15 +204,7 @@ function pruneWhiteFringe(data, width, height) {
       continue
     }
 
-    if (isWhiteFringe(r, g, b) && a < FRINGE_MIN_ALPHA) {
-      data[i] = 0
-      data[i + 1] = 0
-      data[i + 2] = 0
-      data[i + 3] = 0
-      continue
-    }
-
-    if (a < 120 && isWhiteFringe(r, g, b) && (r + g + b) / 3 >= 248) {
+    if (a < 100 && !isCoreBlue(r, g, b)) {
       data[i] = 0
       data[i + 1] = 0
       data[i + 2] = 0
@@ -194,9 +213,70 @@ function pruneWhiteFringe(data, width, height) {
   }
 }
 
+/** Pale opaque fringe connected to canvas edge (not interior cat whites). */
+function isExteriorSpill(r, g, b, a) {
+  if (a < 16) return true
+  if (isCoreBlue(r, g, b) && a >= 100) return false
+  const { sat, light } = pixelStats(r, g, b)
+  if (isWhiteish(r, g, b, a)) return true
+  if (light >= 225 && sat < 50 && !isCoreBlue(r, g, b)) return true
+  if (light >= 200 && sat < 38 && a < 250) return true
+  return false
+}
+
+function floodExteriorSpill(data, width, height) {
+  const channels = 4
+  const size = width * height
+  const spill = new Uint8Array(size)
+  const queue = []
+
+  const push = (x, y) => {
+    const p = y * width + x
+    if (spill[p]) return
+    const i = p * channels
+    if (!isExteriorSpill(data[i], data[i + 1], data[i + 2], data[i + 3])) return
+    spill[p] = 1
+    queue.push(p)
+  }
+
+  for (let x = 0; x < width; x++) {
+    push(x, 0)
+    push(x, height - 1)
+  }
+  for (let y = 0; y < height; y++) {
+    push(0, y)
+    push(width - 1, y)
+  }
+
+  while (queue.length > 0) {
+    const p = queue.pop()
+    const x = p % width
+    const y = (p - x) / width
+    if (x > 0) push(x - 1, y)
+    if (x < width - 1) push(x + 1, y)
+    if (y > 0) push(x, y - 1)
+    if (y < height - 1) push(x, y + 1)
+  }
+
+  for (let p = 0; p < size; p++) {
+    if (!spill[p]) continue
+    const i = p * channels
+    data[i] = 0
+    data[i + 1] = 0
+    data[i + 2] = 0
+    data[i + 3] = 0
+  }
+}
+
+function postKeyAppIconRgba(data, width, height) {
+  decontaminateWhiteSpill(data, width, height)
+  cleanEdgeSpill(data, width, height)
+  floodExteriorSpill(data, width, height)
+}
+
 function postKeyRgba(data, width, height) {
   decontaminateWhiteSpill(data, width, height)
-  pruneWhiteFringe(data, width, height)
+  cleanEdgeSpill(data, width, height)
 }
 
 async function loadKeyedSource(fileName) {
@@ -252,7 +332,7 @@ async function writeAppIconAlpha(trimmed, dest, size) {
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
-  pruneWhiteFringe(data, info.width, info.height)
+  postKeyAppIconRgba(data, info.width, info.height)
   await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .png()
     .toFile(dest)
@@ -294,7 +374,17 @@ const wordmarkKeyed = await loadKeyedSource(sources.wordmark)
 await writeTrimmedWordmark(wordmarkKeyed, path.join(brandDir, 'logo.png'))
 
 const appIconKeyed = await loadKeyedSource(sources.appIcon)
-const appIconTrimmed = await squaredAppIconBuffer(appIconKeyed)
+const appIconSquared = await squaredAppIconBuffer(appIconKeyed)
+const { data: appSqData, info: appSqInfo } = await sharp(appIconSquared)
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true })
+postKeyAppIconRgba(appSqData, appSqInfo.width, appSqInfo.height)
+const appIconTrimmed = await sharp(appSqData, {
+  raw: { width: appSqInfo.width, height: appSqInfo.height, channels: 4 }
+})
+  .png()
+  .toBuffer()
 
 await writeFaviconSet(appIconTrimmed, brandDir)
 

@@ -524,7 +524,12 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 | `wordmark.png` | 横版 logo（白底）→ `brand/generated/logo.png` |
 | `app-icon.png` | 方形 app 图标（白底）→ favicon / Dock / 安装包 |
 
-处理规则：从边缘泛洪去除白色背景变透明；对边缘做白底溢色还原（decontaminate）并剔除灰/浅色半透明 halo；图形内部的白色（如猫脸）保留；app-icon 先居中到透明正方形再缩放，保证四角圆角一致。
+处理规则（**优先级**：① 透明圆角 ② 去白底 ③ 保留蓝底 squircle，边缘蓝可被清理/加固）：
+
+1. 边缘泛洪去除白色背景变透明  
+2. 白底溢色还原（decontaminate）+ 剔除白/浅色 halo（含边缘被白污染的浅蓝像素）  
+3. 不透明蓝色 squircle 主体保留；半透明且确认为蓝色的边缘像素可加固为不透明  
+4. 图形内部白色（猫脸等）保留；app-icon 居中到透明正方形后 `contain` 缩放，禁止 crop  
 
 **Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 
