@@ -64,7 +64,7 @@ export function UploadPage({
     event.target.value = ''
   }
 
-  const onDrop = (event: DragEvent<HTMLDivElement>): void => {
+  const onDrop = (event: DragEvent<HTMLButtonElement>): void => {
     event.preventDefault()
     setDragging(false)
     void handleFile(event.dataTransfer.files?.[0])
@@ -82,9 +82,14 @@ export function UploadPage({
         {replaceMode ? ONBOARDING_COPY.upload.hintReplace : ONBOARDING_COPY.upload.hintNew}
       </p>
 
-      <div
+      <button
+        type="button"
+        disabled={uploading}
+        aria-busy={uploading}
         className={[
-          'mt-8 flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-[20px] border-2 border-dashed px-6 py-10 transition-colors',
+          'mt-8 flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-[20px] border-2 border-dashed px-6 py-10 text-petory-text transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2',
+          'disabled:cursor-wait disabled:opacity-70',
           dragging ? 'border-petory-primary bg-petory-primary-soft' : 'border-petory-border bg-petory-surface'
         ].join(' ')}
         onClick={() => inputRef.current?.click()}
@@ -101,7 +106,7 @@ export function UploadPage({
         <p className="mt-2 text-center text-[12px] text-petory-text-tertiary">
           PNG / JPG / JPEG / WEBP · 最大 10MB
         </p>
-      </div>
+      </button>
 
       <p className="mt-4 text-[12px] leading-relaxed text-petory-text-tertiary">{CONTENT_SAFETY.upload}</p>
 

@@ -74,7 +74,7 @@ npm run dev
 | POST | `/api/admin/users/:id/quota/grant` | 加额度 |
 | POST | `/api/admin/users/:id/pro/activate` | 开通 Pro |
 
-完整列表见 [docs/admin/PRD.md](../docs/admin/PRD.md)。
+完整列表见 [docs/backend/PRD.md](../docs/backend/PRD.md)。
 
 ## 技术栈
 
@@ -104,7 +104,7 @@ DATABASE_URL="postgresql://user:pass@host:5432/petory?schema=public&sslmode=requ
 
 客户端配置 `PETORY_API_BASE_URL=http://localhost:8787` 后走本服务。
 
-- 对接说明：[docs/C2.0.md](../docs/C2.0.md)
+- 对接说明：[docs/releases/client/C2.0.md](../docs/releases/client/C2.0.md)
 - 一键启动：`npm run dev:stack`（仓库根目录）
-- 内测验收：[docs/QA-INTERNAL.md](../docs/QA-INTERNAL.md)
-- 部署：[docs/admin/DEPLOY.md](../docs/admin/DEPLOY.md)
+- 内测验收：[docs/quality/QA-INTERNAL.md](../docs/quality/QA-INTERNAL.md)
+- 部署：[docs/backend/DEPLOY.md](../docs/backend/DEPLOY.md)

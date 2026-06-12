@@ -18,7 +18,7 @@ export function EmptyState({
 }: EmptyStateProps): ReactElement {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-      <div className="mb-4 h-16 w-16 rounded-full bg-petory-primary-soft opacity-60" />
+      <img src="/logo.png" alt="" className="mb-5 h-12 w-auto opacity-80" />
       <p className="text-[15px] font-medium text-petory-text">{title}</p>
       {description ? (
         <p className="mt-2 max-w-[280px] text-[13px] leading-relaxed text-petory-text-secondary">

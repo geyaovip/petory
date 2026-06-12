@@ -1,43 +1,29 @@
-# Petory Docs
+# Petory 文档中心
 
-这是 Petory 的文档总入口。新的说明尽量先放到对应分组，再从这里汇总，避免版本、部署、产品说明散落在根目录里。
+这里是 Petory 的唯一文档入口。文档按用途归档，不再把早期路线、客户端交付和服务端交付混在同一层。
 
-## 文档分组
+## 当前文档
 
-### 产品与版本
+| 分类 | 入口 | 维护原则 |
+|------|------|----------|
+| 产品 | [product/FEATURES.md](./product/FEATURES.md) · [product/BACKLOG.md](./product/BACKLOG.md) | 只描述当前能力和下一步工作 |
+| 设计 | [design/UI-GUIDELINES.md](./design/UI-GUIDELINES.md) | 三端 UI、交互与无障碍的唯一规范 |
+| 服务端 | [backend/README.md](./backend/README.md) | API、数据库、管理端和部署说明 |
+| 开发 | [development/DOCKER-DEV.md](./development/DOCKER-DEV.md) | 本地环境与联调 |
+| 运维 | [operations/MAINTENANCE.md](./operations/MAINTENANCE.md) | 日常维护、发布和故障处理 |
+| 质量 | [quality/QA-INTERNAL.md](./quality/QA-INTERNAL.md) | 自动化与人工验收清单 |
+| UI 审查 | [audits/](./audits/) | 按日期保存审查结论和证据截图 |
 
-| 文档 | 说明 |
-|------|------|
-| [FEATURES.md](./FEATURES.md) | 当前客户端能力总览 |
-| [BACKLOG.md](./BACKLOG.md) | 待办与暂缓项 |
-| [QA-INTERNAL.md](./QA-INTERNAL.md) | 内测验收清单 |
-| [versions/README.md](./versions/README.md) | 版本目录 |
+## 发布记录
 
-### 架构与实现
+- [客户端 C2.x](./releases/client/)：Electron 客户端各阶段交付说明。
+- [服务端 B1.x](./releases/server/)：API 与管理端各阶段交付说明及后续路线。
+- [早期 v0.x-v1.x 路线归档](./archive/roadmap-v0/)：仅用于追溯历史，不代表当前计划。
 
-| 文档 | 说明 |
-|------|------|
-| [UI-DESIGN.md](./UI-DESIGN.md) | 客户端、管理端、官网统一视觉规范 |
-| [C2.0.md](./C2.0.md) | 客户端接后台的对接说明 |
-| [C2.3.md](./C2.3.md) | 客户端 2.3 体验说明 |
-| [C2.4.md](./C2.4.md) | 客户端 2.4 体验说明 |
-| [C2.5.md](./C2.5.md) | 客户端 2.5 体验说明 |
-| [C2.6.md](./C2.6.md) | 客户端 2.6 内测补强 |
-| [admin/README.md](./admin/README.md) | 管理端文档索引 |
+## 放置规则
 
-### 运维与发布
-
-| 文档 | 说明 |
-|------|------|
-| [DOCKER-DEV.md](./DOCKER-DEV.md) | 本地 Docker 开发 |
-| [admin/DEPLOY.md](./admin/DEPLOY.md) | 管理端部署清单 |
-| [admin/DATABASE.md](./admin/DATABASE.md) | PostgreSQL / Prisma 配置 |
-| [admin/VERSION-ROADMAP.md](./admin/VERSION-ROADMAP.md) | 管理端版本规划 |
-| [../website/releases/DEPLOY.md](../website/releases/DEPLOY.md) | 官网与更新清单发布流程 |
-
-## 维护约定
-
-1. 文档优先按“产品、架构、运维、版本”四类归档。
-2. 涉及站点域名、更新 feed、发布链接时，优先同时检查 `src/shared/constants.ts`、`scripts/sync-release-manifest.mjs`、`website/releases/latest.json`。
-3. 新增说明时优先补到对应目录的 `README.md` 或索引页，再在上层入口做一条链接。
-4. 涉及客户端行为变化时，以 `src/shared/` 的类型、常量、提示文案为第一手来源。
+1. 当前行为以代码、product/FEATURES.md 和对应运维文档为准。
+2. 一次发布的冻结说明放到 releases/client/ 或 releases/server/，不在根目录新增版本文件。
+3. 已失效但仍有追溯价值的内容放到 archive/，并在文件开头标注历史状态。
+4. UI 变更必须同步检查 design/UI-GUIDELINES.md；部署变更必须同步检查 backend/DEPLOY.md。
+5. 新文档先归类，再从本页或子目录索引链接，避免形成新的散落入口。

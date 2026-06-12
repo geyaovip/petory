@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import { useEffect, useRef, type ReactElement } from 'react'
 import { Button } from './Button'
 
 interface ConfirmDialogProps {
@@ -22,6 +22,18 @@ export function ConfirmDialog({
   onConfirm,
   onCancel
 }: ConfirmDialogProps): ReactElement | null {
+  const cancelButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    cancelButtonRef.current?.focus()
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onCancel, open])
+
   if (!open) return null
 
   return (
@@ -44,7 +56,7 @@ export function ConfirmDialog({
           {message}
         </p>
         <div className="mt-5 flex gap-2">
-          <Button variant="secondary" fullWidth onClick={onCancel}>
+          <Button ref={cancelButtonRef} variant="secondary" fullWidth onClick={onCancel}>
             {cancelLabel}
           </Button>
           <Button variant={danger ? 'danger' : 'primary'} fullWidth onClick={onConfirm}>

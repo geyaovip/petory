@@ -71,5 +71,5 @@ ok(`client package version ${pkg.version}`)
 if (process.exitCode) {
   console.error('\nSmoke checks failed. Start stack: npm run dev:stack')
 } else {
-  console.log('\nSmoke checks passed. Complete manual steps in docs/QA-INTERNAL.md')
+  console.log('\nSmoke checks passed. Complete manual steps in docs/quality/QA-INTERNAL.md')
 }

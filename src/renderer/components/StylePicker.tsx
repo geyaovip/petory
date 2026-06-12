@@ -25,7 +25,11 @@ export function StylePicker({ value, onChange, lastUsedStyle }: StylePickerProps
   }, [load])
 
   if (catalog.length === 0) {
-    return <p className="text-[13px] text-petory-text-tertiary">加载风格中…</p>
+    return (
+      <p className="text-[13px] text-petory-text-tertiary" role="status">
+        加载风格中…
+      </p>
+    )
   }
 
   return (

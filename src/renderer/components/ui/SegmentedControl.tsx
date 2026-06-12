@@ -35,6 +35,7 @@ export function SegmentedControl<T extends string>({
             disabled={option.disabled}
             className={[
               'flex-1 rounded-lg py-2 text-[14px] font-medium transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-1',
               selected
                 ? 'bg-petory-primary text-white shadow-sm'
                 : 'text-petory-text-secondary hover:bg-petory-primary-soft hover:text-petory-text',

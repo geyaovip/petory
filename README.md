@@ -58,9 +58,10 @@ The app expects `MINIMAX_API_KEY` for generation flows and `KIMI_API_KEY` for ch
 ## Documentation
 
 - Start here: [docs/README.md](./docs/README.md)
-- Versions: [docs/versions/README.md](./docs/versions/README.md)
-- Admin docs: [docs/admin/README.md](./docs/admin/README.md)
-- Local Docker: [docs/DOCKER-DEV.md](./docs/DOCKER-DEV.md)
+- Docs: [docs/README.md](./docs/README.md)
+- Product status: [docs/product/FEATURES.md](./docs/product/FEATURES.md)
+- Server and admin: [docs/backend/README.md](./docs/backend/README.md)
+- Local Docker: [docs/development/DOCKER-DEV.md](./docs/development/DOCKER-DEV.md)
 
 ## Maintenance notes
 

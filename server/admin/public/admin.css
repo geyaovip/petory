@@ -22,6 +22,7 @@
   --error: #e85d5d;
   --error-soft: #fdecec;
   --shadow: 0 1px 3px rgba(45, 42, 38, 0.06);
+  --shadow-md: 0 8px 24px rgba(45, 42, 38, 0.12);
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
@@ -196,6 +197,10 @@ body {
   flex-wrap: wrap;
 }
 
+.nav-toggle {
+  display: none;
+}
+
 .content {
   padding: 24px;
   flex: 1;
@@ -341,6 +346,15 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
 /* Table */
 .table-wrap {
   overflow-x: auto;
@@ -461,23 +475,90 @@ img.thumb {
   }
 
   .sidebar {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    width: min(280px, 86vw);
+    height: 100vh;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-md);
   }
 
-  .nav-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 0;
+  .sidebar.open {
+    transform: translateX(0);
   }
 
-  .nav-label {
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .topbar-actions {
+    margin-left: auto;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .toolbar input[type='search'] {
     width: 100%;
+    min-width: 0;
+    max-width: none !important;
+  }
+
+  .admin-toast {
+    top: 68px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar h2 {
+    font-size: 16px;
+  }
+
+  .topbar-actions #refreshBtn {
+    display: none;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tabs {
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1;
+  }
+
+  th,
+  td {
+    min-width: 112px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -540,4 +621,3 @@ img.thumb {
   color: var(--text-secondary);
   font-size: 13px;
 }
-

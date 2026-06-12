@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactElement } from 'react'
+import { forwardRef, type ButtonHTMLAttributes, type ReactElement } from 'react'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'md' | 'sm'
@@ -25,19 +25,25 @@ const sizeClass: Record<Size, string> = {
   sm: 'h-8 px-3 text-[13px] rounded-lg'
 }
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  fullWidth = false,
-  className = '',
-  children,
-  ...props
-}: ButtonProps): ReactElement {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    size = 'md',
+    fullWidth = false,
+    className = '',
+    children,
+    ...props
+  },
+  ref
+): ReactElement {
   return (
     <button
+      ref={ref}
       type="button"
       className={[
         'inline-flex items-center justify-center font-medium transition-colors duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2 focus-visible:ring-offset-petory-bg',
+        'disabled:cursor-not-allowed',
         variantClass[variant],
         sizeClass[size],
         fullWidth ? 'w-full' : '',
@@ -48,4 +54,4 @@ export function Button({
       {children}
     </button>
   )
-}
+})

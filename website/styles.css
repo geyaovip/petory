@@ -50,10 +50,24 @@ a {
 }
 
 .nav {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 20px 0;
+}
+
+.nav-menu-toggle {
+  display: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .logo {
@@ -81,6 +95,13 @@ a {
 .nav-links a.is-active {
   color: var(--text);
   font-weight: 600;
+}
+
+.nav-links a:focus-visible,
+.nav-menu-toggle:focus-visible,
+.footer a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 .btn {
@@ -197,6 +218,15 @@ a {
 .card h3 {
   margin: 0 0 8px;
   font-size: 18px;
+}
+
+.card-kicker {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--primary-hover);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .card p {
@@ -376,7 +406,95 @@ a {
 }
 
 @media (max-width: 640px) {
+  .container {
+    width: min(100% - 32px, 1080px);
+  }
+
+  .nav {
+    gap: 10px;
+    padding: 14px 0;
+  }
+
+  .logo img {
+    height: 48px;
+  }
+
+  .nav-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+
   .nav-links {
     display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .nav.is-menu-open .nav-links {
+    display: flex;
+  }
+
+  .nav-links a {
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+  }
+
+  .nav-links a:hover,
+  .nav-links a.is-active {
+    background: var(--primary-soft);
+  }
+
+  .nav > .btn {
+    height: 44px;
+    padding: 0 14px;
+  }
+
+  .hero {
+    padding: 52px 0 72px;
+  }
+
+  .hero-compact {
+    padding: 44px 0 8px;
+  }
+
+  .pet-preview {
+    margin-top: 36px;
+  }
+
+  .features,
+  .download-grid {
+    gap: 14px;
+    padding-bottom: 72px;
+  }
+
+  .card,
+  .download-card {
+    padding: 22px;
+  }
+
+  .cta-band {
+    padding: 40px 22px 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

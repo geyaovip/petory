@@ -137,7 +137,10 @@ export function AuthPanel(): ReactElement {
           </label>
 
           {error ? (
-            <p className="rounded-lg bg-petory-error-soft px-3 py-2 text-[12px] text-petory-error">
+            <p
+              className="rounded-lg bg-petory-error-soft px-3 py-2 text-[12px] text-petory-error"
+              role="alert"
+            >
               {error}
             </p>
           ) : null}
@@ -150,7 +153,7 @@ export function AuthPanel(): ReactElement {
         <label className="mt-4 flex items-start gap-2 text-[12px] leading-relaxed text-petory-text-secondary">
           <input
             type="checkbox"
-            className="mt-0.5"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-petory-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2"
             checked={agreedLegal}
             onChange={() => setAgreedLegal((v) => !v)}
           />

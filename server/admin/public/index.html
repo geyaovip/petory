@@ -33,7 +33,7 @@
     </div>
 
     <div id="appShell" class="shell hidden">
-      <aside class="sidebar">
+      <aside id="adminSidebar" class="sidebar">
         <div class="brand">
           <img class="brand-logo" src="logo.png" alt="Petory" />
           <span>运营控制台</span>
@@ -64,6 +64,15 @@
 
       <div class="main">
         <header class="topbar">
+          <button
+            id="navToggle"
+            class="nav-toggle secondary"
+            type="button"
+            aria-expanded="false"
+            aria-controls="adminSidebar"
+          >
+            菜单
+          </button>
           <div>
             <h2 id="viewTitle">数据概览</h2>
             <p id="viewSubtitle" class="muted" style="margin: 4px 0 0"></p>
@@ -698,6 +707,12 @@
         if (e.key === 'Enter') submitLogin()
       })
       document.getElementById('logoutBtn').onclick = () => showLogin()
+      const navToggle = document.getElementById('navToggle')
+      const adminSidebar = document.getElementById('adminSidebar')
+      navToggle.onclick = () => {
+        const open = adminSidebar.classList.toggle('open')
+        navToggle.setAttribute('aria-expanded', String(open))
+      }
       document.getElementById('refreshBtn').onclick = () => {
         loadedViews.delete(currentView)
         loadView(currentView, true).catch((e) => showToast(e.message || '刷新失败', 'error'))
@@ -712,7 +727,11 @@
       })
 
       document.querySelectorAll('.nav-item').forEach((btn) => {
-        btn.addEventListener('click', () => setView(btn.dataset.view))
+        btn.addEventListener('click', () => {
+          setView(btn.dataset.view)
+          adminSidebar.classList.remove('open')
+          navToggle.setAttribute('aria-expanded', 'false')
+        })
       })
 
       document.querySelectorAll('[data-gen-tab]').forEach((btn) => {
@@ -778,7 +797,25 @@
         const t = e.target
         if (!(t instanceof HTMLButtonElement)) return
         if (!canWrite || !getToken()) return
+        const hasMutation =
+          t.dataset.pro ||
+          t.dataset.grant ||
+          t.dataset.disable ||
+          t.dataset.enable ||
+          t.dataset.toggleCode ||
+          t.dataset.flag
+        if (!hasMutation) return
+        const confirmation =
+          t.dataset.disable
+            ? '确定禁用这个用户吗？禁用后该账号将无法继续登录。'
+            : t.dataset.toggleCode
+              ? '确定修改这个兑换码的启用状态吗？'
+              : null
+        if (confirmation && !window.confirm(confirmation)) return
         let successMsg = null
+        const previousLabel = t.textContent
+        t.disabled = true
+        t.setAttribute('aria-busy', 'true')
         try {
           if (t.dataset.pro) {
             await api(`/api/admin/users/${t.dataset.pro}/pro/activate`, { method: 'POST', json: {} })
@@ -818,6 +855,12 @@
           }
         } catch (err) {
           showToast(err.message || '操作失败', 'error')
+        } finally {
+          if (t.isConnected) {
+            t.disabled = false
+            t.removeAttribute('aria-busy')
+            t.textContent = previousLabel
+          }
         }
       })
 

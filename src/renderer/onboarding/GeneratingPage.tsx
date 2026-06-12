@@ -46,7 +46,7 @@ export function GeneratingPage({ styleType = 'petory' }: GeneratingPageProps): R
 
   return (
     <PageShell className="items-center justify-center text-center">
-      <div className="mb-8 h-16 w-16 animate-pulse rounded-full bg-petory-primary-soft" />
+      <img src="/logo.png" alt="" className="mb-8 h-14 w-auto animate-pulse" />
       <p className="text-[18px] font-medium">{PHASE_HEADLINE[phase]}</p>
       {detailLine ? (
         <p className="mt-2 text-[13px] text-petory-text-secondary">{detailLine}</p>
@@ -62,6 +62,9 @@ export function GeneratingPage({ styleType = 'petory' }: GeneratingPageProps): R
           }}
         />
       </div>
+      {percent !== undefined ? (
+        <p className="mt-3 text-[12px] tabular-nums text-petory-text-tertiary">{percent}%</p>
+      ) : null}
     </PageShell>
   )
 }

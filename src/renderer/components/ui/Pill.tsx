@@ -15,8 +15,10 @@ export function Pill({
     <button
       type="button"
       disabled={disabled}
+      aria-pressed={selected}
       className={[
         'rounded-full border px-3 py-1 text-[12px] font-medium transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2',
         selected
           ? 'border-petory-primary bg-petory-primary-soft text-petory-primary'
           : 'border-petory-border text-petory-text hover:border-petory-border-strong hover:bg-petory-muted',
