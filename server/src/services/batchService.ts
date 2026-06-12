@@ -1,5 +1,10 @@
 import type { User } from '@prisma/client'
-import { sortPosesIdleFirst, type ReferenceMode } from '../../../src/shared/generation/reference.js'
+import { createHash } from 'node:crypto'
+import {
+  seedFromString,
+  sortPosesIdleFirst,
+  type ReferenceMode
+} from '../../../src/shared/generation/reference.js'
 import { PET_POSE_LABELS } from '../../../src/shared/poses.js'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js'
 import { prisma } from '../lib/prisma.js'
@@ -147,6 +152,9 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
 
   let referenceBuffer = input.imageBuffer
   let referenceMode: ReferenceMode = 'upload'
+  const generationSeed = seedFromString(
+    createHash('sha256').update(input.imageBuffer).digest('hex')
+  )
 
   for (const job of orderedJobs) {
     const started = Date.now()
@@ -160,6 +168,7 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
         input.styleType,
         job.pose as PetPoseType,
         {
+          seed: generationSeed,
           referenceMode,
           mimeType: usingUploadReference ? input.mimeType : 'image/png'
         }

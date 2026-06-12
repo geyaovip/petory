@@ -22,6 +22,7 @@ function resolveDefaultStyle(
 export function OnboardingFlow(): ReactElement {
   const [step, setStep] = useState<FlowStep>('loading')
   const [replaceMode, setReplaceMode] = useState(false)
+  const [returnToPets, setReturnToPets] = useState(false)
   const [petId, setPetId] = useState<string | null>(null)
   const [selectedStyle, setSelectedStyle] = useState<PetStyleType>('petory')
   const [lastUsedStyle, setLastUsedStyle] = useState<PetStyleType>('petory')
@@ -39,6 +40,7 @@ export function OnboardingFlow(): ReactElement {
 
     const rememberedStyle = settings.lastSelectedStyle
     setLastUsedStyle(rememberedStyle)
+    setReturnToPets(intent?.returnTo === 'pets')
 
     if (intent?.mode === 'restyle') {
       const pets = await window.petory.pets.list()
@@ -80,6 +82,11 @@ export function OnboardingFlow(): ReactElement {
     setSelectedStyle(rememberedStyle)
     setStep('welcome')
   }, [])
+
+  const returnToPrevious = useCallback((): void => {
+    if (returnToPets) window.petory.pets.open()
+    window.close()
+  }, [returnToPets])
 
   useEffect(() => {
     void window.petory.pet.consumeOnboardingIntent().then((intent) => {
@@ -150,8 +157,8 @@ export function OnboardingFlow(): ReactElement {
       <UploadPage
         replaceMode={replaceMode}
         onBack={() => {
-          if (replaceMode) {
-            window.close()
+          if (replaceMode || returnToPets) {
+            returnToPrevious()
             return
           }
           setStep('welcome')
@@ -212,7 +219,7 @@ export function OnboardingFlow(): ReactElement {
         petId={petId}
         isSample={isSamplePet}
         styleType={selectedStyle}
-        onSubmit={() => {}}
+        onSubmit={returnToPrevious}
       />
     )
   }

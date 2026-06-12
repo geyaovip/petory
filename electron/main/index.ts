@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, screen } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { loadAppIcon } from './appIcon'
@@ -185,7 +185,7 @@ function buildContextMenu(): Menu {
     { label: '开始专注', click: () => openPomodoroWindow() },
     { label: '查看成长', click: () => openGrowthWindow() },
     { type: 'separator' },
-    { label: '更换宠物', click: () => openOnboardingWindow() },
+    { label: '更换宠物', click: () => openPetsWindow() },
     { label: '宠物管理', click: () => openPetsWindow() },
     { label: '设置', click: () => openSettingsWindow() },
     { label: '隐藏桌宠', click: () => sendMenuAction('hide') },
@@ -212,6 +212,10 @@ function registerIpc(): void {
     if (!win) return { x: 0, y: 0 }
     const [x, y] = win.getPosition()
     return { x, y }
+  })
+
+  ipcMain.handle(IPC.window.getCursorPosition, (): WindowPosition => {
+    return screen.getCursorScreenPoint()
   })
 
   ipcMain.handle(IPC.window.setPosition, (event, position: WindowPosition) => {
@@ -750,6 +754,19 @@ function bootstrapMainApp(): void {
   }
 }
 
+function openDevelopmentPreviewPanel(): void {
+  if (app.isPackaged) return
+  const panel = process.env.PETORY_DEV_PANEL
+  if (panel === 'settings') {
+    getPetWindow()?.hide()
+    openSettingsWindow()
+  }
+  if (panel === 'pets') {
+    getPetWindow()?.hide()
+    openPetsWindow()
+  }
+}
+
 async function bootstrapOnLaunch(): Promise<void> {
   applyUserSettings()
   rejectLegacyOfflineSession()
@@ -791,6 +808,7 @@ app.whenReady().then(async () => {
   registerChatShortcut()
   initAutoUpdater()
   await bootstrapOnLaunch()
+  setTimeout(openDevelopmentPreviewPanel, 500)
 
   app.on('activate', () => {
     if (!isAuthenticated()) {

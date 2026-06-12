@@ -3,6 +3,7 @@ import type { FinalizePetInput, Pet, UploadResult } from './types/pet'
 export const IPC = {
   window: {
     getPosition: 'petory:window:getPosition',
+    getCursorPosition: 'petory:window:getCursorPosition',
     setPosition: 'petory:window:setPosition',
     hide: 'petory:window:hide',
     show: 'petory:window:show',

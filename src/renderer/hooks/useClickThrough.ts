@@ -99,6 +99,21 @@ export function useClickThrough(
 
   useEffect(() => {
     setIgnore(true)
+    let polling = false
+
+    const syncFromCursor = async (): Promise<void> => {
+      if (polling || draggingRef.current || pointerButtonsRef.current > 0) return
+      polling = true
+      try {
+        const [cursor, windowPosition] = await Promise.all([
+          window.petory.window.getCursorPosition(),
+          window.petory.window.getPosition()
+        ])
+        updateIgnoreAt(cursor.x - windowPosition.x, cursor.y - windowPosition.y)
+      } finally {
+        polling = false
+      }
+    }
 
     const onMove = (event: MouseEvent | PointerEvent): void => {
       pointerButtonsRef.current = event.buttons
@@ -134,6 +149,8 @@ export function useClickThrough(
     window.addEventListener('pointercancel', onPointerUp)
     document.documentElement.addEventListener('mouseleave', onPointerLeave)
     document.documentElement.addEventListener('pointerleave', onPointerLeave)
+    const cursorPoll = window.setInterval(() => void syncFromCursor(), 120)
+    void syncFromCursor()
     return () => {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('pointermove', onMove)
@@ -142,6 +159,7 @@ export function useClickThrough(
       window.removeEventListener('pointercancel', onPointerUp)
       document.documentElement.removeEventListener('mouseleave', onPointerLeave)
       document.documentElement.removeEventListener('pointerleave', onPointerLeave)
+      window.clearInterval(cursorPoll)
       setIgnore(false)
     }
   }, [alphaHitTest, draggingRef, isInteractiveTarget, setIgnore, updateIgnoreAt])

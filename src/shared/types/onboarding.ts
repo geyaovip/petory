@@ -1,4 +1,4 @@
 export type OnboardingIntent =
-  | { mode: 'new' }
-  | { mode: 'replace' }
-  | { mode: 'restyle'; petId: string }
+  | { mode: 'new'; returnTo?: 'pets' }
+  | { mode: 'replace'; returnTo?: 'pets' }
+  | { mode: 'restyle'; petId: string; returnTo?: 'pets' }

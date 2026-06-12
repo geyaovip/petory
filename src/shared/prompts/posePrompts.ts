@@ -1,6 +1,6 @@
 import type { PetPoseType } from '../types/pet'
 
-const POSE_SCENE_RULES = `Full body, plain background, no text or extra objects. Same pet colors and markings as reference.`
+const POSE_SCENE_RULES = `Full body, plain background, no text, accessories, props, clothing, or extra objects. Preserve the exact same individual pet from the reference: species, breed, face shape, eye color, fur color, markings, ear shape, body proportions, and distinctive features must remain unchanged. Change pose and expression only.`
 
 const POSE_BODY: Record<PetPoseType, string> = {
   idle:
@@ -8,13 +8,13 @@ const POSE_BODY: Record<PetPoseType, string> = {
   happy:
     'Pose only: same pet sitting in a front-facing 3/4 view, joyful cheerful expression, paws slightly open or raised in a cute happy gesture.',
   focus:
-    'Pose only: same pet sitting in a front-facing 3/4 view, concentrated studious expression, holding a small book or laptop, calm focused mood.',
+    'Pose only: same pet sitting in a front-facing 3/4 view, attentive eyes and a concentrated calm expression, paws resting naturally.',
   sleep:
     'Pose only: same pet in a cozy sitting-sleep pose, eyes closed peacefully, relaxed posture while still mostly upright and desktop-friendly.',
   remind:
     'Pose only: same pet sitting in a front-facing 3/4 view, one paw raised in a friendly wave, attentive caring expression.',
   angry:
-    'Pose only: same pet sitting in a front-facing 3/4 view, mildly pouty annoyed expression, cute-not-scary upset mood, small crossed arms or puffed cheeks.'
+    'Pose only: same pet sitting in a front-facing 3/4 view, mildly pouty annoyed expression and a cute-not-scary upset mood.'
 }
 
 export function getPoseInstruction(pose: PetPoseType): string {

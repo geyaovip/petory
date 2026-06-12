@@ -25,7 +25,7 @@ import {
   getPosesToGenerate
 } from '../poseService'
 import type { ReferenceMode } from '../../../src/shared/generation/reference'
-import { sortPosesIdleFirst } from '../../../src/shared/generation/reference'
+import { seedFromString, sortPosesIdleFirst } from '../../../src/shared/generation/reference'
 import { getMinimaxApiKey } from '../apiKeys'
 import { ensurePetDirs, getPetById, updatePet } from '../petStore'
 import { generatePetImage } from './minimax'
@@ -210,6 +210,7 @@ async function generatePoseBatch(
 
     try {
       const generated = await generatePetImage(referencePath, pet.styleType, pose, {
+        seed: seedFromString(pet.id),
         referenceMode
       })
       fs.writeFileSync(minimaxRawPath, generated)
@@ -497,6 +498,7 @@ export async function runRegenerateSinglePose(
         const minimaxRawPath = path.join(generatedDir, `minimax_${pose}.png`)
         const posePngPath = getPoseOutputPath(generatedDir, pose)
         const generated = await generatePetImage(idleAnchor, pet.styleType, pose, {
+          seed: seedFromString(pet.id),
           referenceMode: 'anchor'
         })
         fs.writeFileSync(minimaxRawPath, generated)

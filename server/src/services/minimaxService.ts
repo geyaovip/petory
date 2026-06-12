@@ -39,7 +39,8 @@ export async function generateImage(
     aspect_ratio: '3:4',
     response_format: 'base64',
     n: 1,
-    prompt_optimizer: true,
+    // Upload references are identity-critical; prompt rewriting can change the subject.
+    prompt_optimizer: referenceMode === 'anchor',
     subject_reference: [{ type: 'character', image_file: dataUrl }]
   }
 

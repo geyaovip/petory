@@ -1,4 +1,6 @@
 import type { User } from '@prisma/client'
+import { createHash } from 'node:crypto'
+import { seedFromString } from '../../../src/shared/generation/reference.js'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js'
 import { prisma } from '../lib/prisma.js'
 import { canUseStyle } from './entitlementService.js'
@@ -67,6 +69,7 @@ export async function createSinglePoseRegen(
   const started = Date.now()
   try {
     const { buffer, prompt } = await generateImage(input.imageBuffer, input.styleType, input.pose, {
+      seed: seedFromString(createHash('sha256').update(input.imageBuffer).digest('hex')),
       referenceMode: input.pose === 'idle' ? 'upload' : 'anchor',
       mimeType: input.mimeType
     })

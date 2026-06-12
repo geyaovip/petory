@@ -14,6 +14,8 @@ export function usePetDrag({ onClick, draggingRef }: UsePetDragOptions) {
   const origin = useRef({ x: 0, y: 0, winX: 0, winY: 0 })
   const activePointerId = useRef<number | null>(null)
   const captureElRef = useRef<HTMLElement | null>(null)
+  const frameRef = useRef<number | null>(null)
+  const pendingPositionRef = useRef<{ x: number; y: number } | null>(null)
   const onClickRef = useRef(onClick)
   onClickRef.current = onClick
 
@@ -54,6 +56,16 @@ export function usePetDrag({ onClick, draggingRef }: UsePetDragOptions) {
     setDragging(false)
     activePointerId.current = null
     releaseCaptureRef.current()
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current)
+      frameRef.current = null
+    }
+    const finalPosition = pendingPositionRef.current
+    pendingPositionRef.current = null
+    if (finalPosition) {
+      windowPos.current = finalPosition
+      void window.petory.window.setPosition(finalPosition)
+    }
     window.removeEventListener('pointermove', handleWindowPointerMoveRef.current)
     window.removeEventListener('pointerup', handleWindowPointerUpRef.current)
     window.removeEventListener('pointercancel', handleWindowPointerUpRef.current)
@@ -75,8 +87,17 @@ export function usePetDrag({ onClick, draggingRef }: UsePetDragOptions) {
       x: origin.current.winX + dx,
       y: origin.current.winY + dy
     }
-    windowPos.current = next
-    void window.petory.window.setPosition(next)
+    pendingPositionRef.current = next
+    if (frameRef.current === null) {
+      frameRef.current = requestAnimationFrame(() => {
+        frameRef.current = null
+        const pending = pendingPositionRef.current
+        pendingPositionRef.current = null
+        if (!pending) return
+        windowPos.current = pending
+        void window.petory.window.setPosition(pending)
+      })
+    }
   })
 
   const handleWindowPointerUpRef = useRef((event: PointerEvent) => {
@@ -90,6 +111,7 @@ export function usePetDrag({ onClick, draggingRef }: UsePetDragOptions) {
       window.removeEventListener('pointerup', handleWindowPointerUpRef.current)
       window.removeEventListener('pointercancel', handleWindowPointerUpRef.current)
       releaseCaptureRef.current()
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
     }
   }, [refreshWindowPos])
 

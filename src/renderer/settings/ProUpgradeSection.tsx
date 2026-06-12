@@ -24,6 +24,7 @@ export function ProUpgradeSection({
   onReload: () => Promise<void>
 }): ReactElement {
   const [plans, setPlans] = useState<PaymentPlan[]>([])
+  const [plansUnavailable, setPlansUnavailable] = useState(false)
   const [loadingPlan, setLoadingPlan] = useState<PaymentPlanId | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlanId>('pro_monthly')
 
@@ -34,7 +35,10 @@ export function ProUpgradeSection({
     : true
 
   useEffect(() => {
-    void window.petory.payment.getPlans().then(setPlans)
+    void window.petory.payment
+      .getPlans()
+      .then(setPlans)
+      .catch(() => setPlansUnavailable(true))
   }, [])
 
   const purchase = async (planId: PaymentPlanId): Promise<void> => {
@@ -103,9 +107,14 @@ export function ProUpgradeSection({
                 </label>
               ))}
             </div>
+            {plansUnavailable ? (
+              <p className="text-[12px] text-petory-text-tertiary">
+                暂时无法获取套餐信息，请检查网络后重试。
+              </p>
+            ) : null}
             <Button
               fullWidth
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || plans.length === 0}
               onClick={() => void purchase(selectedPlan)}
             >
               {loadingPlan ? '处理中…' : isPro ? '续费 Pro' : '开通 Pro'}

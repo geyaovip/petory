@@ -130,7 +130,12 @@ function createPanelWindow(
   })
 
   loadWindowContent(win, mode)
-  win.once('ready-to-show', () => win.show())
+  const showPanel = (): void => {
+    if (!win.isDestroyed() && !win.isVisible()) win.show()
+  }
+  win.once('ready-to-show', showPanel)
+  // Slow or offline service calls must not leave a usable panel permanently hidden.
+  setTimeout(showPanel, 1200)
   win.on('closed', () => {
     ref.current = null
   })
@@ -454,7 +459,7 @@ export function openSettingsWindow(): void {
   settingsWindow = createPanelWindow(
     holder,
     'settings',
-    { width: 480, height: 640, minWidth: 420, minHeight: 560 },
+    { width: 720, height: 720, minWidth: 620, minHeight: 600 },
     'Petory — Settings',
     { x: 40, y: 40 }
   )
@@ -471,7 +476,7 @@ export function openPetsWindow(): void {
   petsWindow = createPanelWindow(
     holder,
     'pets',
-    { width: 400, height: 480, minWidth: 360, minHeight: 420 },
+    { width: 760, height: 680, minWidth: 640, minHeight: 560 },
     'Petory — Pets',
     { x: 60, y: 60 }
   )
@@ -568,11 +573,14 @@ export function showPetWindowAfterCreation(): void {
 
 export function moveWindowTo(win: BrowserWindow, position: { x: number; y: number }): void {
   if (win.isDestroyed()) return
-  const display = screen.getDisplayNearestPoint(position)
+  if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) return
+  // Trackpads commonly report fractional screen coordinates; Electron requires integers here.
+  const point = { x: Math.round(position.x), y: Math.round(position.y) }
+  const display = screen.getDisplayNearestPoint(point)
   const { x, y, width, height } = display.workArea
   const [w, h] = win.getSize()
-  const clampedX = Math.min(Math.max(position.x, x), x + width - w)
-  const clampedY = Math.min(Math.max(position.y, y), y + height - h)
+  const clampedX = Math.min(Math.max(point.x, x), x + width - w)
+  const clampedY = Math.min(Math.max(point.y, y), y + height - h)
   win.setPosition(clampedX, clampedY)
 }
 

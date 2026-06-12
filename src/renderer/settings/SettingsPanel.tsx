@@ -131,8 +131,19 @@ export function SettingsPanel(): ReactElement {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-petory-bg px-4 py-8 text-petory-text">
-      <PanelHeader title="设置" onClose={() => window.petory.settings.close()} />
+    <div className="flex h-full min-h-0 flex-col bg-petory-bg text-petory-text">
+      <div className="shrink-0 border-b border-petory-border bg-petory-bg/95 px-7 pb-4 pt-5">
+        <PanelHeader
+          className="pt-0"
+          title="设置"
+          subtitle="账号、桌宠行为、隐私与应用维护"
+          onClose={() => window.petory.settings.close()}
+        />
+
+        <SegmentedTabs className="mt-4" items={SETTINGS_TABS} value={tab} onChange={setTab} />
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-8">
 
       {status ? (
         <StatusBanner className="mt-3" message={status} variant={statusVariant} />
@@ -141,8 +152,6 @@ export function SettingsPanel(): ReactElement {
       {authState?.maintenanceNotice ? (
         <MaintenanceNotice className="mt-4" message={authState.maintenanceNotice} />
       ) : null}
-
-      <SegmentedTabs className="mt-4" items={SETTINGS_TABS} value={tab} onChange={setTab} />
 
       {tab === 'account' ? (
         <>
@@ -380,9 +389,9 @@ export function SettingsPanel(): ReactElement {
               <Button
                 variant="secondary"
                 fullWidth
-                onClick={() => window.petory.pet.openOnboarding({ mode: 'replace' })}
+                onClick={() => window.petory.pets.open()}
               >
-                {SETTINGS_COPY.activePet.replace}
+                管理或更换宠物
               </Button>
             </Section>
           ) : null}
@@ -547,6 +556,7 @@ export function SettingsPanel(): ReactElement {
         }}
         onCancel={() => setConfirmKind(null)}
       />
+      </div>
     </div>
   )
 }

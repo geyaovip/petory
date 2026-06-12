@@ -1,7 +1,3 @@
-function formatMeta(sizeLabel, fileName) {
-  return [sizeLabel, fileName].filter(Boolean).join(' · ')
-}
-
 async function loadManifest() {
   const versionEl = document.getElementById('release-version')
   const macLink = document.getElementById('mac-download')
@@ -17,11 +13,8 @@ async function loadManifest() {
     versionEl.textContent = data.version
     macLink.href = data.mac.url
     macLink.textContent = '下载 macOS 版'
-    macMeta.textContent = formatMeta(data.mac.sizeLabel, data.mac.fileName)
-
     winLink.href = data.win.url
     winLink.textContent = '下载 Windows 版'
-    winMeta.textContent = formatMeta(data.win.sizeLabel, data.win.fileName)
   } catch {
     versionEl.textContent = '暂不可用'
     macMeta.textContent = '暂时无法获取下载链接，请稍后再试'

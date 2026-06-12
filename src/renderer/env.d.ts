@@ -58,6 +58,7 @@ export interface PetoryAPI {
   }
   window: {
     getPosition: () => Promise<WindowPosition>
+    getCursorPosition: () => Promise<WindowPosition>
     setPosition: (position: WindowPosition) => Promise<void>
     hide: () => void
     show: () => void

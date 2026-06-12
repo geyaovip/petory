@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('petory', {
   window: {
     getPosition: (): Promise<WindowPosition> =>
       ipcRenderer.invoke(IPC.window.getPosition),
+    getCursorPosition: (): Promise<WindowPosition> =>
+      ipcRenderer.invoke(IPC.window.getCursorPosition),
     setPosition: (position: WindowPosition): Promise<void> =>
       ipcRenderer.invoke(IPC.window.setPosition, position),
     hide: (): void => ipcRenderer.send(IPC.window.hide),
