@@ -396,7 +396,7 @@ export function createChatWindow(): BrowserWindow {
   chatWindow = createPanelWindow(
     holder,
     'chat',
-    { width: 360, height: 480, minWidth: 320, minHeight: 400 },
+    { width: 400, height: 560, minWidth: 360, minHeight: 480 },
     'Petory — Chat',
     { x: 0, y: 0 }
   )
@@ -417,7 +417,7 @@ export function createPomodoroWindow(): BrowserWindow {
   pomodoroWindow = createPanelWindow(
     holder,
     'pomodoro',
-    { width: 320, height: 400, minWidth: 300, minHeight: 360 },
+    { width: 380, height: 500, minWidth: 340, minHeight: 440 },
     'Petory — Focus',
     { x: 0, y: 0 }
   )
@@ -438,7 +438,7 @@ export function createGrowthWindow(): BrowserWindow {
   growthWindow = createPanelWindow(
     holder,
     'growth',
-    { width: 360, height: 440, minWidth: 320, minHeight: 400 },
+    { width: 440, height: 580, minWidth: 380, minHeight: 500 },
     'Petory — Growth',
     { x: 20, y: 20 }
   )
@@ -459,7 +459,7 @@ export function openSettingsWindow(): void {
   settingsWindow = createPanelWindow(
     holder,
     'settings',
-    { width: 720, height: 720, minWidth: 620, minHeight: 600 },
+    { width: 940, height: 760, minWidth: 780, minHeight: 640 },
     'Petory — Settings',
     { x: 40, y: 40 }
   )
@@ -499,7 +499,7 @@ export function openGuideWindow(): void {
   guideWindow = createPanelWindow(
     holder,
     'guide',
-    { width: 360, height: 420, minWidth: 320, minHeight: 380 },
+    { width: 440, height: 560, minWidth: 380, minHeight: 500 },
     'Petory — Guide',
     { x: 30, y: 30 }
   )

@@ -45,7 +45,7 @@ export function ResultPage({
         {ONBOARDING_COPY.result.subtitle(styleLabel)}
       </p>
 
-      <div className="bg-petory-checker mt-8 flex h-[240px] w-full items-center justify-center rounded-[20px] border border-petory-border shadow-md">
+      <div className="bg-petory-checker mt-8 flex h-[240px] w-full items-center justify-center rounded-2xl border border-petory-border">
         {preview ? (
           <img src={preview} alt="Generated pet" className="max-h-[200px] max-w-[80%] object-contain" />
         ) : (
@@ -61,7 +61,7 @@ export function ResultPage({
         {!showRestyle ? (
           <TextButton onClick={() => setShowRestyle(true)}>{ONBOARDING_COPY.result.restyleToggle}</TextButton>
         ) : (
-          <div className="w-full rounded-2xl border border-petory-border bg-petory-surface p-4 shadow-sm">
+          <div className="w-full rounded-2xl border border-petory-border bg-petory-surface p-4">
             <p className="text-[12px] text-petory-text-secondary">{ONBOARDING_COPY.result.restyleHint}</p>
             <div className="mt-3">
               <StylePicker value={style} onChange={setStyle} lastUsedStyle={lastUsedStyle} />

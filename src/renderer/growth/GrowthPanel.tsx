@@ -3,8 +3,8 @@ import type { GrowthStats, InteractionLog } from '@shared/types/growth'
 import { playLevelUp } from '../utils/petSound'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PanelHeader } from '../components/ui/PanelHeader'
 import { PanelLoading } from '../components/ui/PanelLoading'
+import { PanelFrame } from '../components/ui/PanelFrame'
 
 const INTERACTION_LABELS: Record<InteractionLog['type'], string> = {
   chat: '聊天',
@@ -61,14 +61,9 @@ export function GrowthPanel(): ReactElement {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-petory-bg px-4 py-8 text-petory-text">
-      <PanelHeader
-        className="mb-4"
-        title="成长"
-        onClose={() => window.petory.growth.close()}
-      />
-
-      <div className="rounded-2xl bg-petory-surface p-4 shadow-sm">
+    <PanelFrame title="成长" subtitle="每一次陪伴都会留下记录" onClose={() => window.petory.growth.close()}>
+      <div className="px-6 py-6">
+      <div className="border-b border-petory-border pb-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[20px] font-semibold">{stats.name}</p>
@@ -76,13 +71,13 @@ export function GrowthPanel(): ReactElement {
               Lv.{stats.level} · {stats.styleLabel}
             </p>
           </div>
-          <span className="rounded-full bg-petory-primary-soft px-3 py-1 text-[13px] font-medium text-petory-primary">
+          <span className="rounded-full bg-petory-primary-soft px-3 py-1 text-[12px] font-medium text-petory-primary">
             Lv.{stats.level}
           </span>
         </div>
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-petory-track">
+        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-petory-track">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-petory-primary to-petory-primary-light"
+            className="h-full rounded-full bg-petory-primary"
             style={{ width: `${stats.expPercent}%` }}
           />
         </div>
@@ -93,24 +88,24 @@ export function GrowthPanel(): ReactElement {
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <div className="rounded-xl bg-petory-surface p-3 shadow-sm">
+      <div className="grid grid-cols-3 divide-x divide-petory-border border-b border-petory-border py-6">
+        <div className="px-4 first:pl-0">
           <p className="text-[12px] text-petory-text-tertiary">今日专注</p>
           <p className="mt-1 text-[20px] font-semibold">{stats.todayFocusCount}</p>
         </div>
-        <div className="rounded-xl bg-petory-surface p-3 shadow-sm">
+        <div className="px-4">
           <p className="text-[12px] text-petory-text-tertiary">连续陪伴</p>
           <p className="mt-1 text-[20px] font-semibold">{stats.streakDays}</p>
         </div>
-        <div className="rounded-xl bg-petory-surface p-3 shadow-sm">
+        <div className="px-4">
           <p className="text-[12px] text-petory-text-tertiary">姿势图</p>
           <p className="mt-1 text-[20px] font-semibold">{stats.poseCount}</p>
         </div>
       </div>
 
-      <section className="mt-4 rounded-2xl bg-petory-surface p-4 shadow-sm">
-        <h2 className="text-[13px] font-medium text-petory-text-secondary">小成就</h2>
-        <div className="mt-2 flex flex-wrap gap-2">
+      <section className="border-b border-petory-border py-6">
+        <h2 className="text-[13px] font-semibold">小成就</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
           {stats.badges.map((badge) => (
             <span
               key={badge.id}
@@ -128,11 +123,11 @@ export function GrowthPanel(): ReactElement {
       </section>
 
       {stats.recentInteractions.length > 0 ? (
-        <section className="mt-4 rounded-2xl bg-petory-surface p-4 shadow-sm">
-          <h2 className="text-[13px] font-medium text-petory-text-secondary">最近互动</h2>
-          <ul className="mt-2 space-y-2">
+        <section className="py-6">
+          <h2 className="text-[13px] font-semibold">最近互动</h2>
+          <ul className="mt-3 divide-y divide-petory-border">
             {stats.recentInteractions.map((item) => (
-              <li key={item.id} className="text-[12px] text-petory-text-secondary">
+              <li key={item.id} className="py-3 text-[12px] text-petory-text-secondary">
                 <span className="text-petory-text-tertiary">
                   {new Date(item.createdAt).toLocaleString()} ·{' '}
                   {INTERACTION_LABELS[item.type]}
@@ -159,6 +154,7 @@ export function GrowthPanel(): ReactElement {
       >
         打开设置
       </Button>
-    </div>
+      </div>
+    </PanelFrame>
   )
 }

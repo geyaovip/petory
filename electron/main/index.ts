@@ -765,6 +765,22 @@ function openDevelopmentPreviewPanel(): void {
     getPetWindow()?.hide()
     openPetsWindow()
   }
+  if (panel === 'chat') {
+    getPetWindow()?.hide()
+    openChatWindow()
+  }
+  if (panel === 'pomodoro') {
+    getPetWindow()?.hide()
+    openPomodoroWindow()
+  }
+  if (panel === 'growth') {
+    getPetWindow()?.hide()
+    openGrowthWindow()
+  }
+  if (panel === 'guide') {
+    getPetWindow()?.hide()
+    openGuideWindow()
+  }
 }
 
 async function bootstrapOnLaunch(): Promise<void> {

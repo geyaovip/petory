@@ -3,6 +3,7 @@ import { GUIDE_COPY } from '@shared/copy/guide'
 import { Button } from '../components/ui/Button'
 import { TextButton } from '../components/ui/TextButton'
 import { GuideIllustration } from './GuideIllustration'
+import { PanelFrame } from '../components/ui/PanelFrame'
 
 export function GuidePanel(): ReactElement {
   const [step, setStep] = useState(0)
@@ -16,15 +17,13 @@ export function GuidePanel(): ReactElement {
   }
 
   return (
-    <div className="flex h-full flex-col bg-petory-bg px-6 py-8 text-petory-text">
-      <div className="flex items-center justify-between">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-petory-primary">
-          {GUIDE_COPY.stepLabel(step + 1, steps.length)}
-        </p>
+    <PanelFrame title="功能指南" subtitle={GUIDE_COPY.stepLabel(step + 1, steps.length)} onClose={() => void finish()}>
+      <div className="flex min-h-full flex-col px-8 py-6">
+      <div className="flex items-center justify-end">
         <TextButton onClick={() => void finish()}>{GUIDE_COPY.skip}</TextButton>
       </div>
 
-      <div className="mt-6 flex flex-1 flex-col items-center">
+      <div className="mt-2 flex flex-1 flex-col items-center">
         <GuideIllustration stepId={current.id} />
         <h1 className="mt-6 w-full text-[22px] font-semibold">{current.title}</h1>
         <p className="mt-3 w-full text-[14px] leading-relaxed text-petory-text-secondary">{current.body}</p>
@@ -42,22 +41,23 @@ export function GuidePanel(): ReactElement {
         ))}
       </div>
 
-      <div className="mt-8 flex gap-3">
+      <div className="mt-8 flex justify-end gap-3">
         {step > 0 ? (
-          <Button variant="secondary" fullWidth onClick={() => setStep((s) => s - 1)}>
+          <Button variant="secondary" onClick={() => setStep((s) => s - 1)}>
             {GUIDE_COPY.prev}
           </Button>
         ) : null}
         {isLast ? (
-          <Button fullWidth onClick={() => void finish()}>
+          <Button onClick={() => void finish()}>
             {GUIDE_COPY.finish}
           </Button>
         ) : (
-          <Button fullWidth onClick={() => setStep((s) => s + 1)}>
+          <Button onClick={() => setStep((s) => s + 1)}>
             {GUIDE_COPY.next}
           </Button>
         )}
       </div>
-    </div>
+      </div>
+    </PanelFrame>
   )
 }

@@ -15,10 +15,10 @@ export function WelcomePage({
   sampleLoading = false
 }: WelcomePageProps): ReactElement {
   return (
-    <PageShell className="items-center justify-center text-center">
-      <img src="/logo.png" alt="Petory" className="mb-8 h-16 w-auto" />
-      <div className="mb-10">
-        <p className="text-[28px] font-semibold leading-snug">{ONBOARDING_COPY.welcome.title}</p>
+    <PageShell className="items-center justify-center bg-petory-surface text-center">
+      <img src="/logo.png" alt="Petory" className="mb-8 h-14 w-auto" />
+      <div className="mb-9 max-w-[340px]">
+        <p className="text-[26px] font-semibold leading-snug tracking-[-0.02em]">{ONBOARDING_COPY.welcome.title}</p>
         <p className="mt-3 text-[13px] leading-relaxed text-petory-text-secondary">
           {ONBOARDING_COPY.welcome.subtitle}
         </p>

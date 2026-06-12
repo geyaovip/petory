@@ -39,7 +39,7 @@ export function AppShell({ mode, children }: AppShellProps): ReactElement {
   const showMaintenance = Boolean(maintenanceNotice) && mode !== 'auth'
   const showExpired = Boolean(sessionExpiredMessage) && mode !== 'auth'
 
-  const showTitleBar = mode !== 'pet'
+  const showTitleBar = mode === 'auth' || mode === 'onboarding' || mode === 'loading'
 
   return (
     <div className="flex h-full min-h-0 flex-col">

@@ -1,16 +1,10 @@
+import { Check } from '@phosphor-icons/react'
 import { useEffect, useState, type ReactElement } from 'react'
 import type { AuthState } from '@shared/types/auth'
 import { formatPlanPrice } from '@shared/paymentPlans'
 import type { PaymentPlan, PaymentPlanId } from '@shared/types/payment'
-import type { StatusVariant } from '../components/ui/StatusBanner'
 import { Button } from '../components/ui/Button'
-
-function formatExpiry(iso: string | null | undefined): string | null {
-  if (!iso) return null
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
-}
+import type { StatusVariant } from '../components/ui/StatusBanner'
 
 export function ProUpgradeSection({
   authState,
@@ -24,110 +18,75 @@ export function ProUpgradeSection({
   onReload: () => Promise<void>
 }): ReactElement {
   const [plans, setPlans] = useState<PaymentPlan[]>([])
-  const [plansUnavailable, setPlansUnavailable] = useState(false)
   const [loadingPlan, setLoadingPlan] = useState<PaymentPlanId | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlanId>('pro_monthly')
-
+  const [unavailable, setUnavailable] = useState(false)
   const isPro = authState.session?.user.plan === 'pro'
-  const expiry = formatExpiry(authState.session?.user.proExpiresAt)
-  const paymentOpen = authState.useRemoteBackend
-    ? authState.paymentEnabled !== false && authState.mockPaymentEnabled !== false
-    : true
 
   useEffect(() => {
-    void window.petory.payment
-      .getPlans()
-      .then(setPlans)
-      .catch(() => setPlansUnavailable(true))
+    void window.petory.payment.getPlans().then(setPlans).catch(() => setUnavailable(true))
   }, [])
 
-  const purchase = async (planId: PaymentPlanId): Promise<void> => {
-    setLoadingPlan(planId)
+  const purchase = async (): Promise<void> => {
+    setLoadingPlan(selectedPlan)
     try {
-      const result = await window.petory.payment.purchaseMock(planId)
-      if (!result.success) {
-        onStatus(result.message, 'error')
-        return
-      }
+      const result = await window.petory.payment.purchaseMock(selectedPlan)
+      if (!result.success) return onStatus(result.message, 'error')
       onAuthUpdated(result.state)
       await onReload()
-      const extra = result.poseCompletion ? `，已补全 ${result.poseCompletion.added} 张 Pro 姿势` : ''
-      onStatus(`已开通 Pro${extra}`)
+      onStatus('已开通 Petory Pro')
     } finally {
       setLoadingPlan(null)
     }
   }
 
   return (
-    <section className="mt-6">
-      <h2 className="text-[13px] font-medium text-petory-text-secondary">Pro 升级</h2>
-      <div className="mt-2 space-y-3 rounded-2xl bg-petory-surface p-4 shadow-sm">
-        <p className="text-[13px] text-petory-text-secondary">
-          免费版：3 种姿势 + 1 只桌宠。Pro 解锁 6 种姿势、多风格、最多 5 只桌宠并行，以及更高每日额度。
-        </p>
-
-        {isPro ? (
-          <p className="rounded-lg bg-petory-primary-soft px-3 py-2 text-[12px] text-petory-primary">
-            当前为 Pro{expiry ? `，有效期至 ${expiry}` : '（兑换码永久）'}
-          </p>
-        ) : null}
-
-        {paymentOpen ? (
-          <>
-            <p className="text-[11px] text-petory-text-tertiary">
-              当前为试用开通方式，不产生真实扣款；微信 / 支付宝支付即将上线。
-            </p>
-            <div className="space-y-2">
+    <section>
+      <div className="mb-2 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-[13px] font-semibold">Petory Pro</h2>
+          <p className="mt-0.5 text-[12px] text-petory-text-tertiary">更多姿势、多只桌宠与更高每日额度。</p>
+        </div>
+        {isPro ? <span className="rounded-full bg-petory-primary-soft px-2.5 py-1 text-[11px] font-medium text-petory-primary">已开通</span> : null}
+      </div>
+      <div className="border-y border-petory-border">
+        <div className="grid grid-cols-3 gap-3 py-4 text-[12px] text-petory-text-secondary">
+          {['6 种完整姿势', '最多 5 只桌宠', '更高生成与对话额度'].map((benefit) => (
+            <span key={benefit} className="flex items-center gap-1.5">
+              <Check size={14} className="text-petory-primary" weight="bold" />
+              {benefit}
+            </span>
+          ))}
+        </div>
+        {plans.length > 0 ? (
+          <div className="flex items-center justify-between gap-5 border-t border-petory-border py-4">
+            <div className="flex gap-2">
               {plans.map((plan) => (
-                <label
+                <button
                   key={plan.id}
-                  className={[
-                    'flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5',
+                  type="button"
+                  className={`rounded-lg border px-4 py-2 text-left transition-colors ${
                     selectedPlan === plan.id
-                      ? 'border-petory-primary bg-petory-primary-soft/40'
-                      : 'border-petory-border'
-                  ].join(' ')}
+                      ? 'border-petory-primary bg-petory-primary-soft'
+                      : 'border-petory-border bg-petory-surface hover:border-petory-border-strong'
+                  }`}
+                  onClick={() => setSelectedPlan(plan.id)}
                 >
-                  <input
-                    type="radio"
-                    name="pro-plan"
-                    className="mt-1"
-                    checked={selectedPlan === plan.id}
-                    onChange={() => setSelectedPlan(plan.id)}
-                  />
-                  <span className="flex-1 text-left">
-                    <span className="block text-[14px] font-medium">
-                      {plan.name}{' '}
-                      <span className="text-petory-primary">{formatPlanPrice(plan)}</span>
-                    </span>
-                    <span className="mt-0.5 block text-[12px] text-petory-text-tertiary">
-                      {plan.description}
-                    </span>
-                  </span>
-                </label>
+                  <span className="block text-[12px] font-medium">{plan.name}</span>
+                  <span className="mt-0.5 block text-[11px] text-petory-text-tertiary">{formatPlanPrice(plan)}</span>
+                </button>
               ))}
             </div>
-            {plansUnavailable ? (
-              <p className="text-[12px] text-petory-text-tertiary">
-                暂时无法获取套餐信息，请检查网络后重试。
-              </p>
-            ) : null}
-            <Button
-              fullWidth
-              disabled={loadingPlan !== null || plans.length === 0}
-              onClick={() => void purchase(selectedPlan)}
-            >
+            <Button size="sm" disabled={loadingPlan !== null} onClick={() => void purchase()}>
               {loadingPlan ? '处理中…' : isPro ? '续费 Pro' : '开通 Pro'}
             </Button>
-          </>
+          </div>
         ) : (
-          <p className="text-[12px] text-petory-text-tertiary">
-            支付暂未开放，可在上方账号区使用兑换码开通 Pro。
-          </p>
+          <div className="flex items-center justify-between border-t border-petory-border py-4">
+            <p className="text-[12px] text-petory-text-tertiary">{unavailable ? '暂时无法获取套餐，请稍后重试。' : '正在获取套餐…'}</p>
+            <Button size="sm" variant="secondary" onClick={() => window.petory.app.openDownloadPage()}>了解 Pro</Button>
+          </div>
         )}
-        <Button variant="secondary" fullWidth onClick={() => window.petory.app.openDownloadPage()}>
-          了解 Pro / 获取安装包
-        </Button>
       </div>
     </section>
   )

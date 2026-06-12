@@ -13,6 +13,7 @@ import { Pill } from '../components/ui/Pill'
 import { StatusBanner } from '../components/ui/StatusBanner'
 
 export function PetManagerPanel(): ReactElement {
+  const isMac = window.petory.platform === 'darwin'
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null)
   const [desktopStatus, setDesktopStatus] = useState<DesktopPetStatus | null>(null)
@@ -122,7 +123,11 @@ export function PetManagerPanel(): ReactElement {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-petory-bg text-petory-text">
-      <div className="shrink-0 border-b border-petory-border px-7 pb-4 pt-5">
+      <div
+        className={`shrink-0 border-b border-petory-border pb-4 pr-7 pt-5 ${
+          isMac ? 'pl-[84px]' : 'pl-7'
+        }`}
+      >
         <PanelHeader
           className="pt-0"
           title="宠物管理"

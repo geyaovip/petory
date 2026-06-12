@@ -17,7 +17,7 @@ export function Pill({
       disabled={disabled}
       aria-pressed={selected}
       className={[
-        'rounded-full border px-3 py-1 text-[12px] font-medium transition-colors',
+        'rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2',
         selected
           ? 'border-petory-primary bg-petory-primary-soft text-petory-primary'

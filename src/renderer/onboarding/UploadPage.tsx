@@ -3,6 +3,7 @@ import { ALLOWED_EXTENSIONS, CONTENT_SAFETY, MAX_UPLOAD_BYTES } from '@shared/co
 import { ONBOARDING_COPY } from '@shared/copy/onboarding'
 import { PageShell } from '../components/ui/PageShell'
 import { TextButton } from '../components/ui/TextButton'
+import { UploadSimple } from '@phosphor-icons/react'
 
 interface UploadPageProps {
   replaceMode?: boolean
@@ -72,7 +73,7 @@ export function UploadPage({
 
   return (
     <PageShell>
-      <TextButton className="mb-6 self-start px-0" onClick={onBack}>
+      <TextButton className="mb-8 self-start px-0" onClick={onBack}>
         ← 返回
       </TextButton>
       <h1 className="text-[22px] font-semibold">
@@ -87,7 +88,7 @@ export function UploadPage({
         disabled={uploading}
         aria-busy={uploading}
         className={[
-          'mt-8 flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-[20px] border-2 border-dashed px-6 py-10 text-petory-text transition-colors',
+          'mt-8 flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-10 text-petory-text transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2',
           'disabled:cursor-wait disabled:opacity-70',
           dragging ? 'border-petory-primary bg-petory-primary-soft' : 'border-petory-border bg-petory-surface'
@@ -100,6 +101,9 @@ export function UploadPage({
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
       >
+        <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-petory-primary-soft text-petory-primary">
+          <UploadSimple size={23} weight="bold" />
+        </span>
         <p className="text-[15px] font-medium">
           {uploading ? ONBOARDING_COPY.upload.uploading : ONBOARDING_COPY.upload.cta}
         </p>

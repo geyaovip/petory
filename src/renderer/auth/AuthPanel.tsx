@@ -68,10 +68,13 @@ export function AuthPanel(): ReactElement {
   }
 
   return (
-    <PageShell className="justify-center">
+    <PageShell className="justify-center bg-petory-surface">
       <div className="mx-auto w-full max-w-[360px]">
-        <img src="/logo.png" alt="Petory" className="mx-auto mb-5 h-14 w-auto" />
-        <p className="text-center text-[15px] leading-relaxed text-petory-text-secondary">
+        <img src="/logo.png" alt="Petory" className="mb-7 h-12 w-auto" />
+        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">
+          {tab === 'login' ? '登录 Petory' : '创建 Petory 账号'}
+        </h1>
+        <p className="mt-2 text-[13px] leading-relaxed text-petory-text-secondary">
           {remote ? AUTH_COPY.subtitleRemote : AUTH_COPY.subtitleLocal}
         </p>
 
@@ -80,7 +83,7 @@ export function AuthPanel(): ReactElement {
         ) : null}
 
         <SegmentedControl
-          className="mt-6"
+          className="mt-7"
           value={tab}
           options={[
             { value: 'login', label: '登录' },
@@ -98,7 +101,7 @@ export function AuthPanel(): ReactElement {
           </p>
         ) : null}
 
-        <form className="mt-6 space-y-4" onSubmit={(e) => void submit(e)}>
+        <form className="mt-7 space-y-4" onSubmit={(e) => void submit(e)}>
           {tab === 'register' ? (
             <label className="block text-[13px] font-medium text-petory-text-secondary">
               {AUTH_COPY.displayNameLabel}

@@ -20,7 +20,7 @@ export function SegmentedTabs<T extends string>({
 }: SegmentedTabsProps<T>): ReactElement {
   return (
     <div
-      className={['flex gap-1 overflow-x-auto rounded-xl bg-petory-surface p-1 shadow-sm', className].join(
+      className={['flex gap-1 overflow-x-auto rounded-lg border border-petory-border bg-petory-surface p-1', className].join(
         ' '
       )}
       role="tablist"
@@ -34,7 +34,7 @@ export function SegmentedTabs<T extends string>({
             role="tab"
             aria-selected={selected}
             className={[
-              'min-w-0 flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
+              'min-w-0 flex-1 whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-medium transition-colors',
               selected
                 ? 'bg-petory-primary-soft text-petory-primary'
                 : 'text-petory-text-secondary hover:bg-petory-muted hover:text-petory-text'

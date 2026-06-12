@@ -1,54 +1,73 @@
-import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from 'react'
-import { SETTINGS_COPY } from '@shared/copy/settings'
-import type { AuthState } from '@shared/types/auth'
-import type { UpdateState } from '@shared/types/update'
-import { getStyleDefinition } from '@shared/styles'
-import type { Pet, PetPersonality, PoseCompletionStatus } from '@shared/types/pet'
-import type { SedentaryInterval, UserSettings } from '@shared/types/settings'
+import {
+  Bell,
+  GearSix,
+  PawPrint,
+  ShieldCheck,
+  SignOut,
+  UserCircle
+} from '@phosphor-icons/react'
+import { useCallback, useEffect, useState, type CSSProperties, type ReactElement } from 'react'
 import { PERSONALITIES } from '@shared/constants'
 import { getPlanLabel } from '@shared/planLabels'
+import type { AuthState } from '@shared/types/auth'
+import type { Pet, PetPersonality, PoseCompletionStatus } from '@shared/types/pet'
+import type { SedentaryInterval, UserSettings } from '@shared/types/settings'
+import type { UpdateState } from '@shared/types/update'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Input } from '../components/ui/Input'
-import { PanelHeader } from '../components/ui/PanelHeader'
+import { PreferenceGroup, PreferenceRow } from '../components/ui/PreferenceGroup'
 import { Pill } from '../components/ui/Pill'
-import { SegmentedTabs } from '../components/ui/SegmentedTabs'
-import { Toggle } from '../components/ui/Toggle'
-import { MaintenanceNotice } from '../components/MaintenanceNotice'
 import { StatusBanner, type StatusVariant } from '../components/ui/StatusBanner'
+import { Toggle } from '../components/ui/Toggle'
 import { ProUpgradeSection } from './ProUpgradeSection'
 
-type SettingsTab = 'account' | 'pet' | 'privacy' | 'advanced'
+type SettingsTab = 'account' | 'pet' | 'reminders' | 'privacy' | 'advanced'
 type ConfirmKind = 'import' | 'wipe' | null
 
-const SETTINGS_TABS = [
-  { id: 'account' as const, label: SETTINGS_COPY.tabs.account },
-  { id: 'pet' as const, label: SETTINGS_COPY.tabs.pet },
-  { id: 'privacy' as const, label: SETTINGS_COPY.tabs.privacy },
-  { id: 'advanced' as const, label: SETTINGS_COPY.tabs.advanced }
+const NAV_ITEMS = [
+  { id: 'account' as const, label: '账号', icon: UserCircle },
+  { id: 'pet' as const, label: '桌宠', icon: PawPrint },
+  { id: 'reminders' as const, label: '提醒', icon: Bell },
+  { id: 'privacy' as const, label: '隐私与数据', icon: ShieldCheck },
+  { id: 'advanced' as const, label: '高级', icon: GearSix }
 ]
 
-function Section({ title, children }: { title: string; children: ReactNode }): ReactElement {
-  return (
-    <section className="mt-5">
-      <h2 className="text-[13px] font-medium text-petory-text-secondary">{title}</h2>
-      <div className="mt-2 space-y-3 rounded-2xl bg-petory-surface p-4 shadow-sm">{children}</div>
-    </section>
-  )
+const TAB_COPY: Record<SettingsTab, { title: string; subtitle: string }> = {
+  account: { title: '账号', subtitle: '管理登录状态、额度与 Petory Pro。' },
+  pet: { title: '桌宠', subtitle: '自定义桌宠在桌面上的行为与外观。' },
+  reminders: { title: '提醒', subtitle: '控制久坐与专注结束时的通知。' },
+  privacy: { title: '隐私与数据', subtitle: '管理本地数据、聊天记录和隐私选项。' },
+  advanced: { title: '高级', subtitle: '服务地址、应用更新与维护操作。' }
 }
 
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-  description
+function Segment<T extends string>({
+  value,
+  options,
+  onChange
 }: {
-  label: string
-  checked: boolean
-  onChange: (next: boolean) => void
-  description?: string
+  value: T
+  options: Array<{ value: T; label: string }>
+  onChange: (value: T) => void
 }): ReactElement {
-  return <Toggle label={label} description={description} checked={checked} onChange={onChange} />
+  return (
+    <div className="inline-flex overflow-hidden rounded-lg border border-petory-border bg-petory-surface p-0.5">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={`min-w-16 rounded-md px-4 py-1.5 text-[12px] font-medium transition-colors ${
+            value === option.value
+              ? 'bg-petory-primary-soft text-petory-primary'
+              : 'text-petory-text-secondary hover:bg-petory-muted'
+          }`}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function SettingsPanel(): ReactElement {
@@ -59,25 +78,22 @@ export function SettingsPanel(): ReactElement {
   const [authState, setAuthState] = useState<AuthState | null>(null)
   const [redeemCode, setRedeemCode] = useState('')
   const [updateState, setUpdateState] = useState<UpdateState | null>(null)
-  const [status, setStatus] = useState<string | null>(null)
-  const [statusVariant, setStatusVariant] = useState<StatusVariant>('info')
   const [poseStatus, setPoseStatus] = useState<PoseCompletionStatus | null>(null)
-  const [completingPoses, setCompletingPoses] = useState(false)
-  const [tab, setTab] = useState<SettingsTab>('account')
+  const [status, setStatus] = useState<{ message: string; variant: StatusVariant } | null>(null)
+  const [tab, setTab] = useState<SettingsTab>('pet')
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null)
 
   const load = useCallback(async () => {
-    const authPromise = window.petory.auth.refresh().catch(() => window.petory.auth.getState())
-    const [nextSettings, ver, pet, nextAuth, nextUpdate, nextPoseStatus] = await Promise.all([
+    const [nextSettings, nextVersion, pet, nextAuth, nextUpdate, nextPoseStatus] = await Promise.all([
       window.petory.settings.get(),
       window.petory.app.getVersion(),
       window.petory.pet.getActive(),
-      authPromise,
+      window.petory.auth.refresh().catch(() => window.petory.auth.getState()),
       window.petory.update.getState(),
       window.petory.pet.getPoseCompletionStatus()
     ])
     setSettings(nextSettings)
-    setVersion(ver)
+    setVersion(nextVersion)
     setActivePet(pet)
     setActivePersonality(pet?.personality ?? null)
     setAuthState(nextAuth)
@@ -97,466 +113,281 @@ export function SettingsPanel(): ReactElement {
 
   const save = async (patch: Partial<UserSettings>): Promise<void> => {
     if (!settings) return
-    const next = await window.petory.settings.set({ ...settings, ...patch })
-    setSettings(next)
+    setSettings(await window.petory.settings.set({ ...settings, ...patch }))
   }
 
   const showStatus = (message: string, variant: StatusVariant = 'success'): void => {
-    setStatus(message)
-    setStatusVariant(variant)
-    setTimeout(() => setStatus(null), 3000)
-  }
-
-  const runImport = (): void => {
-    void window.petory.data.import().then(async (result) => {
-      if (!result.success) {
-        if (!result.cancelled) showStatus(result.message, 'error')
-        return
-      }
-      showStatus(SETTINGS_COPY.data.importSuccess(result.petFileCount))
-      await load()
-    })
-  }
-
-  const runWipe = (): void => {
-    void window.petory.data.wipeAll()
+    setStatus({ message, variant })
+    window.setTimeout(() => setStatus(null), 3000)
   }
 
   if (!settings) {
-    return (
-      <div className="flex h-full items-center justify-center bg-petory-bg text-petory-text-secondary">
-        {SETTINGS_COPY.loading}
-      </div>
-    )
+    return <div className="flex h-full items-center justify-center bg-petory-bg text-[13px] text-petory-text-tertiary">加载设置中…</div>
   }
 
+  const tabCopy = TAB_COPY[tab]
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-petory-bg text-petory-text">
-      <div className="shrink-0 border-b border-petory-border bg-petory-bg/95 px-7 pb-4 pt-5">
-        <PanelHeader
-          className="pt-0"
-          title="设置"
-          subtitle="账号、桌宠行为、隐私与应用维护"
-          onClose={() => window.petory.settings.close()}
-        />
+    <div className="flex h-full min-h-0 bg-petory-bg text-petory-text">
+      <aside className="flex w-[220px] shrink-0 flex-col border-r border-petory-border bg-petory-surface/45 px-4 pb-5 pt-6">
+        <div className="electron-drag px-3 pb-6 pt-2">
+          <p className="text-[20px] font-semibold tracking-[-0.02em]">Petory</p>
+          <p className="mt-1 text-[11px] text-petory-text-tertiary">偏好设置 · v{version}</p>
+        </div>
+        <nav className="space-y-1" aria-label="设置分类">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            const selected = tab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition-colors ${
+                  selected
+                    ? 'bg-petory-primary-soft text-petory-primary'
+                    : 'text-petory-text-secondary hover:bg-petory-muted hover:text-petory-text'
+                }`}
+                onClick={() => setTab(item.id)}
+              >
+                <Icon size={19} weight={selected ? 'fill' : 'regular'} />
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
 
-        <SegmentedTabs className="mt-4" items={SETTINGS_TABS} value={tab} onChange={setTab} />
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-8">
-
-      {status ? (
-        <StatusBanner className="mt-3" message={status} variant={statusVariant} />
-      ) : null}
-
-      {authState?.maintenanceNotice ? (
-        <MaintenanceNotice className="mt-4" message={authState.maintenanceNotice} />
-      ) : null}
-
-      {tab === 'account' ? (
-        <>
+        <div className="mt-auto border-t border-petory-border pt-4">
           {authState?.session ? (
-            <Section title={SETTINGS_COPY.tabs.account}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{authState.session.user.displayName}</p>
-                  <p className="text-[12px] text-petory-text-tertiary">{authState.session.user.email}</p>
-                </div>
-                <span className="rounded-full bg-petory-primary-soft px-2 py-0.5 text-[11px] font-medium text-petory-primary">
-                  {getPlanLabel(authState.session.user.plan)}
-                </span>
-              </div>
-              <p className="text-[12px] text-petory-text-secondary">
-                {SETTINGS_COPY.account.quotaRemaining(
-                  authState.remainingChat,
-                  authState.remainingGeneration
-                )}
-              </p>
-              {authState.session.user.proExpiresAt ? (
-                <p className="text-[11px] text-petory-text-tertiary">
-                  {SETTINGS_COPY.account.proExpires}{' '}
-                  {new Date(authState.session.user.proExpiresAt).toLocaleDateString('zh-CN')}
-                </p>
-              ) : null}
-              {authState.useRemoteBackend ? (
-                <p className="text-[11px] text-petory-text-tertiary">
-                  {SETTINGS_COPY.account.cloudSync}
-                  {authState.generationServiceEnabled === false
-                    ? SETTINGS_COPY.account.genMaintenance
-                    : ''}
-                  {authState.chatServiceEnabled === false ? SETTINGS_COPY.account.chatMaintenance : ''}
-                </p>
-              ) : null}
-              <div className="flex gap-2">
-                <Input
-                  className="h-9 flex-1 text-[13px]"
-                  placeholder={SETTINGS_COPY.account.redeemPlaceholder}
-                  value={redeemCode}
-                  onChange={(e) => setRedeemCode(e.target.value)}
-                />
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    void window.petory.auth.redeemCode(redeemCode).then(async (result) => {
-                      if (result.success) {
-                        setRedeemCode('')
-                        setAuthState(result.state)
-                        if (result.poseCompletion) {
-                          showStatus(
-                            SETTINGS_COPY.account.redeemSuccessWithPoses(result.poseCompletion.added)
-                          )
-                        } else {
-                          showStatus(SETTINGS_COPY.account.redeemSuccess)
-                        }
-                        await load()
-                      } else {
-                        showStatus(result.message, 'error')
-                      }
-                    })
-                  }
+            <div className="px-3 pb-3">
+              <p className="truncate text-[12px] font-medium">{authState.session.user.displayName}</p>
+              <p className="mt-0.5 truncate text-[11px] text-petory-text-tertiary">{authState.session.user.email}</p>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[12px] font-medium text-petory-error transition-colors hover:bg-petory-error-soft"
+            onClick={() => void window.petory.auth.logout()}
+          >
+            <SignOut size={17} />
+            退出登录
+          </button>
+        </div>
+      </aside>
+
+      <section className="flex min-w-0 flex-1 flex-col">
+        <header className="electron-drag flex h-[104px] shrink-0 items-center justify-between border-b border-petory-border px-10">
+          <div>
+            <h1 className="text-[26px] font-semibold tracking-[-0.025em]">{tabCopy.title}</h1>
+            <p className="mt-1 text-[13px] text-petory-text-tertiary">{tabCopy.subtitle}</p>
+          </div>
+          <button
+            type="button"
+            className="electron-no-drag rounded-lg px-3 py-2 text-[13px] font-medium text-petory-text-secondary hover:bg-petory-muted"
+            onClick={() => window.petory.settings.close()}
+          >
+            关闭
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-10 py-7">
+          {status ? <StatusBanner className="mb-5" message={status.message} variant={status.variant} /> : null}
+
+          {tab === 'account' ? (
+            <div className="max-w-[760px] space-y-8">
+              <PreferenceGroup title="登录账号">
+                <PreferenceRow
+                  title={authState?.session?.user.displayName ?? '未登录'}
+                  description={authState?.session?.user.email ?? '登录后可同步额度与会员状态'}
                 >
-                  {SETTINGS_COPY.account.redeem}
-                </Button>
-              </div>
-              <Button variant="ghost" fullWidth onClick={() => void window.petory.auth.logout()}>
-                {SETTINGS_COPY.account.logout}
-              </Button>
-            </Section>
-          ) : null}
-
-          {authState?.session ? (
-            <ProUpgradeSection
-              authState={authState}
-              onStatus={showStatus}
-              onAuthUpdated={setAuthState}
-              onReload={load}
-            />
-          ) : null}
-        </>
-      ) : null}
-
-      {tab === 'pet' ? (
-        <>
-          <Section title={SETTINGS_COPY.tabs.pet}>
-            <ToggleRow
-              label={SETTINGS_COPY.desktop.launchAtStartup}
-              checked={settings.launchAtStartup}
-              onChange={(v) => void save({ launchAtStartup: v })}
-            />
-            <ToggleRow
-              label={SETTINGS_COPY.desktop.alwaysOnTop}
-              checked={settings.alwaysOnTop}
-              onChange={(v) => void save({ alwaysOnTop: v })}
-            />
-            <div>
-              <p className="text-[14px]">{SETTINGS_COPY.desktop.petSize}</p>
-              <div className="mt-2 flex gap-2">
-                {(['small', 'medium', 'large'] as const).map((size) => (
-                  <Pill
-                    key={size}
-                    selected={settings.petSize === size}
-                    onClick={() => void save({ petSize: size })}
-                  >
-                    {size === 'small'
-                      ? SETTINGS_COPY.desktop.sizeSmall
-                      : size === 'medium'
-                        ? SETTINGS_COPY.desktop.sizeMedium
-                        : SETTINGS_COPY.desktop.sizeLarge}
-                  </Pill>
-                ))}
-              </div>
-            </div>
-            <label className="block text-[14px]">
-              {SETTINGS_COPY.desktop.opacity(Math.round(settings.petOpacity * 100))}
-              <input
-                type="range"
-                min={0.3}
-                max={1}
-                step={0.05}
-                value={settings.petOpacity}
-                className="mt-2 w-full"
-                onChange={(e) => void save({ petOpacity: Number(e.target.value) })}
-              />
-            </label>
-            <ToggleRow
-              label={SETTINGS_COPY.desktop.enableSound}
-              checked={settings.enableSound}
-              onChange={(v) => void save({ enableSound: v })}
-            />
-          </Section>
-
-          <Section title="提醒">
-            <ToggleRow
-              label={SETTINGS_COPY.reminders.sedentary}
-              checked={settings.enableSedentaryReminder}
-              onChange={(v) => void save({ enableSedentaryReminder: v })}
-            />
-            <div>
-              <p className="text-[13px] text-petory-text-secondary">
-                {SETTINGS_COPY.reminders.sedentaryInterval}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {([30, 45, 60, 90] as SedentaryInterval[]).map((min) => (
-                  <Pill
-                    key={min}
-                    selected={settings.sedentaryInterval === min}
-                    onClick={() => void save({ sedentaryInterval: min })}
-                  >
-                    {SETTINGS_COPY.reminders.sedentaryMinutes(min)}
-                  </Pill>
-                ))}
-              </div>
-            </div>
-            <ToggleRow
-              label={SETTINGS_COPY.reminders.pomodoro}
-              checked={settings.enablePomodoroReminder}
-              onChange={(v) => void save({ enablePomodoroReminder: v })}
-            />
-          </Section>
-
-          {activePersonality ? (
-            <Section title={SETTINGS_COPY.personality.title}>
-              <div className="flex flex-wrap gap-2">
-                {PERSONALITIES.map((item) => (
-                  <Pill
-                    key={item}
-                    className="px-3 py-1.5 text-[12px]"
-                    selected={activePersonality === item}
-                    onClick={() =>
-                      void window.petory.pets.updatePersonality(item).then(() => {
-                        setActivePersonality(item)
-                        showStatus(SETTINGS_COPY.personality.updated)
-                      })
-                    }
-                  >
-                    {item}
-                  </Pill>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-
-          {poseStatus && poseStatus.pending.length > 0 ? (
-            <Section title={SETTINGS_COPY.poseCompletion.title}>
-              <p className="text-[13px] text-petory-text-secondary">{SETTINGS_COPY.poseCompletion.hint}</p>
-              <ul className="mt-2 space-y-1 text-[12px] text-petory-text-tertiary">
-                {poseStatus.pending.map((item) => (
-                  <li key={item.petId}>
-                    {SETTINGS_COPY.poseCompletion.missing(item.name, item.missing.length)}
-                  </li>
-                ))}
-              </ul>
-              <Button
-                className="mt-3"
-                variant="secondary"
-                fullWidth
-                disabled={completingPoses || poseStatus.running}
-                onClick={() => {
-                  setCompletingPoses(true)
-                  void window.petory.pet
-                    .completePoses()
-                    .then(async (result) => {
-                      if (result.success && 'completed' in result) {
-                        const total = result.completed.reduce((s, c) => s + c.addedCount, 0)
-                        showStatus(SETTINGS_COPY.poseCompletion.success(total))
-                      } else if (!result.success) {
-                        showStatus(result.message, 'error')
-                      }
-                      await load()
-                    })
-                    .finally(() => setCompletingPoses(false))
-                }}
-              >
-                {completingPoses || poseStatus.running
-                  ? SETTINGS_COPY.poseCompletion.running
-                  : SETTINGS_COPY.poseCompletion.cta}
-              </Button>
-            </Section>
-          ) : null}
-
-          {activePet ? (
-            <Section title={SETTINGS_COPY.activePet.title}>
-              <p className="text-[14px] font-medium">{activePet.name}</p>
-              <p className="text-[12px] text-petory-text-tertiary">
-                {getStyleDefinition(activePet.styleType).labelZh} · {activePet.personality}
-              </p>
-              <p className="text-[12px] text-petory-text-tertiary">
-                {SETTINGS_COPY.activePet.lastStyle(
-                  getStyleDefinition(settings.lastSelectedStyle).labelZh,
-                  Object.keys(activePet.posePaths ?? {}).length || 1
-                )}
-              </p>
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={() => window.petory.pets.open()}
-              >
-                管理或更换宠物
-              </Button>
-            </Section>
-          ) : null}
-        </>
-      ) : null}
-
-      {tab === 'privacy' ? (
-        <>
-          <Section title={SETTINGS_COPY.legal.title}>
-            <Button variant="ghost" fullWidth onClick={() => window.petory.app.openTerms()}>
-              {SETTINGS_COPY.legal.terms}
-            </Button>
-            <Button variant="ghost" fullWidth onClick={() => window.petory.app.openPrivacy()}>
-              {SETTINGS_COPY.legal.privacy}
-            </Button>
-            <ToggleRow
-              label={SETTINGS_COPY.legal.crashReporting}
-              checked={settings.enableCrashReporting}
-              onChange={(v) => void save({ enableCrashReporting: v })}
-            />
-            <Button variant="ghost" fullWidth onClick={() => window.petory.guide.open()}>
-              {SETTINGS_COPY.legal.reopenGuide}
-            </Button>
-          </Section>
-
-          <Section title={SETTINGS_COPY.data.title}>
-            <p className="text-[12px] text-petory-text-tertiary">{SETTINGS_COPY.data.hint}</p>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() =>
-                void window.petory.data.export().then((result) => {
-                  if (result.success) showStatus(SETTINGS_COPY.data.exportSuccess)
-                  else showStatus(result.message, 'error')
-                })
-              }
-            >
-              {SETTINGS_COPY.data.export}
-            </Button>
-            <Button variant="secondary" fullWidth onClick={() => setConfirmKind('import')}>
-              {SETTINGS_COPY.data.import}
-            </Button>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() =>
-                void window.petory.data.clearChat().then(() =>
-                  showStatus(SETTINGS_COPY.data.clearChatSuccess)
-                )
-              }
-            >
-              {SETTINGS_COPY.data.clearChat}
-            </Button>
-            <Button variant="secondary" fullWidth onClick={() => window.petory.pets.open()}>
-              {SETTINGS_COPY.data.petManager}
-            </Button>
-            <Button variant="secondary" fullWidth onClick={() => setConfirmKind('wipe')}>
-              {SETTINGS_COPY.data.wipeAll}
-            </Button>
-          </Section>
-        </>
-      ) : null}
-
-      {tab === 'advanced' ? (
-        <>
-          <Section title={SETTINGS_COPY.api.title}>
-            <label className="block text-[13px]">
-              <span className="font-medium text-petory-text-secondary">{SETTINGS_COPY.api.title}</span>
-              <Input
-                type="url"
-                className="mt-2 h-9 text-[13px]"
-                placeholder={SETTINGS_COPY.api.placeholder}
-                value={settings.apiBaseUrl}
-                onChange={(e) => void save({ apiBaseUrl: e.target.value.trim() })}
-              />
-            </label>
-            <p className="text-[11px] leading-relaxed text-petory-text-tertiary">{SETTINGS_COPY.api.hint}</p>
-          </Section>
-
-          <Section title={SETTINGS_COPY.update.title}>
-            {updateState ? (
-              <>
-                <p className="text-[13px] text-petory-text-secondary">
-                  {updateState.status === 'available'
-                    ? SETTINGS_COPY.update.available(updateState.version ?? '')
-                    : updateState.status === 'ready'
-                      ? SETTINGS_COPY.update.ready(updateState.version ?? '')
-                      : updateState.status === 'downloading'
-                        ? SETTINGS_COPY.update.downloading(Math.round(updateState.progress ?? 0))
-                        : updateState.message || SETTINGS_COPY.update.defaultMessage}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      void window.petory.update.check().then((next) => {
-                        setUpdateState(next)
-                        showStatus(next.message || SETTINGS_COPY.update.checked)
-                      })
-                    }
-                  >
-                    {SETTINGS_COPY.update.check}
-                  </Button>
-                  {updateState.status === 'available' ? (
+                  <span className="rounded-full bg-petory-primary-soft px-2.5 py-1 text-[11px] font-medium text-petory-primary">
+                    {getPlanLabel(authState?.session?.user.plan ?? 'free')}
+                  </span>
+                </PreferenceRow>
+                <PreferenceRow
+                  title="今日额度"
+                  description={`对话 ${authState?.remainingChat ?? 0} 次 · 生成 ${authState?.remainingGeneration ?? 0} 次`}
+                >
+                  <span className="text-[12px] text-petory-text-tertiary">云端同步</span>
+                </PreferenceRow>
+                <PreferenceRow title="兑换码" description="输入兑换码开通权益或增加额度。">
+                  <div className="flex w-[300px] gap-2">
+                    <Input value={redeemCode} placeholder="输入兑换码" onChange={(event) => setRedeemCode(event.target.value)} />
                     <Button
-                      variant="primary"
-                      onClick={() => void window.petory.update.download().then(setUpdateState)}
+                      size="sm"
+                      disabled={!redeemCode.trim()}
+                      onClick={() =>
+                        void window.petory.auth.redeemCode(redeemCode).then(async (result) => {
+                          if (!result.success) return showStatus(result.message, 'error')
+                          setRedeemCode('')
+                          setAuthState(result.state)
+                          showStatus('兑换成功')
+                          await load()
+                        })
+                      }
                     >
-                      {SETTINGS_COPY.update.download}
+                      兑换
                     </Button>
-                  ) : null}
-                  {updateState.status === 'ready' ? (
-                    <Button variant="primary" onClick={() => window.petory.update.install()}>
-                      {SETTINGS_COPY.update.install}
-                    </Button>
-                  ) : null}
-                </div>
-              </>
-            ) : null}
-          </Section>
+                  </div>
+                </PreferenceRow>
+              </PreferenceGroup>
+              {authState?.session ? (
+                <ProUpgradeSection authState={authState} onStatus={showStatus} onAuthUpdated={setAuthState} onReload={load} />
+              ) : null}
+            </div>
+          ) : null}
 
-          <Section title={SETTINGS_COPY.about.title}>
-            <p className="text-[13px] text-petory-text-secondary">
-              {SETTINGS_COPY.about.version(version || '1.0.0')}
-            </p>
-            <Button variant="ghost" fullWidth onClick={() => window.petory.app.openWebsite()}>
-              {SETTINGS_COPY.about.website}
-            </Button>
-            <Button variant="ghost" fullWidth onClick={() => window.petory.app.openDownloadPage()}>
-              {SETTINGS_COPY.about.downloadPage}
-            </Button>
-            <Button variant="ghost" fullWidth onClick={() => window.petory.app.openFeedback()}>
-              {SETTINGS_COPY.about.feedback}
-            </Button>
-            <Button variant="secondary" fullWidth onClick={() => window.petory.app.quit()}>
-              {SETTINGS_COPY.about.quit}
-            </Button>
-          </Section>
-        </>
-      ) : null}
+          {tab === 'pet' ? (
+            <div className="max-w-[760px] space-y-8">
+              {activePet ? (
+                <PreferenceGroup title="当前桌宠">
+                  <PreferenceRow title={activePet.name} description={`${activePet.personality} · Lv.${activePet.level}`}>
+                    <Button size="sm" variant="secondary" onClick={() => window.petory.pets.open()}>管理宠物</Button>
+                  </PreferenceRow>
+                </PreferenceGroup>
+              ) : null}
+              <PreferenceGroup title="行为">
+                <Toggle checked={settings.launchAtStartup} onChange={(value) => void save({ launchAtStartup: value })} label="开机自动启动" description="系统启动后自动运行 Petory。" />
+                <Toggle checked={settings.alwaysOnTop} onChange={(value) => void save({ alwaysOnTop: value })} label="桌宠始终置顶" description="让桌宠保持在其他窗口上方。" />
+                <PreferenceRow title="桌宠大小" description="调整桌宠在桌面上的显示尺寸。">
+                  <Segment
+                    value={settings.petSize}
+                    options={[{ value: 'small', label: '小' }, { value: 'medium', label: '中' }, { value: 'large', label: '大' }]}
+                    onChange={(petSize) => void save({ petSize })}
+                  />
+                </PreferenceRow>
+                <PreferenceRow title="透明度" description="调整桌宠的透明显示效果。">
+                  <div className="flex w-[280px] items-center gap-4">
+                    <input
+                      type="range"
+                      className="petory-range w-full"
+                      min={0.3}
+                      max={1}
+                      step={0.05}
+                      value={settings.petOpacity}
+                      style={{ '--range-progress': `${((settings.petOpacity - 0.3) / 0.7) * 100}%` } as CSSProperties}
+                      onChange={(event) => void save({ petOpacity: Number(event.target.value) })}
+                    />
+                    <span className="w-10 text-right text-[12px] font-medium text-petory-text-secondary">{Math.round(settings.petOpacity * 100)}%</span>
+                  </div>
+                </PreferenceRow>
+                <Toggle checked={settings.enableSound} onChange={(value) => void save({ enableSound: value })} label="桌宠音效" description="播放点击、提醒与升级音效。" />
+              </PreferenceGroup>
+              {activePersonality ? (
+                <PreferenceGroup title="性格" description="影响聊天语气，不会改变宠物外观。">
+                  <PreferenceRow title="聊天性格" align="start">
+                    <div className="flex max-w-[420px] flex-wrap justify-end gap-2">
+                      {PERSONALITIES.map((personality) => (
+                        <Pill
+                          key={personality}
+                          selected={activePersonality === personality}
+                          onClick={() =>
+                            void window.petory.pets.updatePersonality(personality).then(() => {
+                              setActivePersonality(personality)
+                              showStatus('性格已更新')
+                            })
+                          }
+                        >
+                          {personality}
+                        </Pill>
+                      ))}
+                    </div>
+                  </PreferenceRow>
+                </PreferenceGroup>
+              ) : null}
+            </div>
+          ) : null}
+
+          {tab === 'reminders' ? (
+            <div className="max-w-[760px] space-y-8">
+              <PreferenceGroup title="久坐提醒">
+                <Toggle checked={settings.enableSedentaryReminder} onChange={(value) => void save({ enableSedentaryReminder: value })} label="启用久坐提醒" description="定时提醒你起身活动。" />
+                <PreferenceRow title="提醒间隔" description="选择多久没有活动后提醒。">
+                  <Segment
+                    value={String(settings.sedentaryInterval) as `${SedentaryInterval}`}
+                    options={([30, 45, 60, 90] as SedentaryInterval[]).map((value) => ({ value: String(value) as `${SedentaryInterval}`, label: `${value} 分钟` }))}
+                    onChange={(value) => void save({ sedentaryInterval: Number(value) as SedentaryInterval })}
+                  />
+                </PreferenceRow>
+              </PreferenceGroup>
+              <PreferenceGroup title="专注提醒">
+                <Toggle checked={settings.enablePomodoroReminder} onChange={(value) => void save({ enablePomodoroReminder: value })} label="番茄钟结束提醒" description="专注或休息结束时通知你。" />
+                <PreferenceRow title="专注时长">
+                  <Segment value={String(settings.focusDuration)} options={[15, 25, 45, 60].map((value) => ({ value: String(value), label: `${value} 分钟` }))} onChange={(value) => void save({ focusDuration: Number(value) })} />
+                </PreferenceRow>
+                <PreferenceRow title="休息时长">
+                  <Segment value={String(settings.breakDuration)} options={[5, 10, 15].map((value) => ({ value: String(value), label: `${value} 分钟` }))} onChange={(value) => void save({ breakDuration: Number(value) })} />
+                </PreferenceRow>
+                <Toggle checked={settings.autoNextRound} onChange={(value) => void save({ autoNextRound: value })} label="自动开始下一轮" description="专注和休息结束后自动继续。" />
+              </PreferenceGroup>
+            </div>
+          ) : null}
+
+          {tab === 'privacy' ? (
+            <div className="max-w-[760px] space-y-8">
+              <PreferenceGroup title="隐私">
+                <Toggle checked={settings.enableCrashReporting} onChange={(value) => void save({ enableCrashReporting: value })} label="保存本地崩溃日志" description="日志只保存在本机，不会自动上传。" />
+                <PreferenceRow title="用户协议"><Button size="sm" variant="secondary" onClick={() => window.petory.app.openTerms()}>查看</Button></PreferenceRow>
+                <PreferenceRow title="隐私政策"><Button size="sm" variant="secondary" onClick={() => window.petory.app.openPrivacy()}>查看</Button></PreferenceRow>
+              </PreferenceGroup>
+              <PreferenceGroup title="本地数据" description="导入前会自动备份当前数据。">
+                <PreferenceRow title="导出完整备份"><Button size="sm" variant="secondary" onClick={() => void window.petory.data.export().then((result) => showStatus(result.success ? '备份已保存' : result.message, result.success ? 'success' : 'error'))}>导出</Button></PreferenceRow>
+                <PreferenceRow title="从备份恢复"><Button size="sm" variant="secondary" onClick={() => setConfirmKind('import')}>导入</Button></PreferenceRow>
+                <PreferenceRow title="清除聊天记录"><Button size="sm" variant="secondary" onClick={() => void window.petory.data.clearChat().then(() => showStatus('聊天记录已清除'))}>清除</Button></PreferenceRow>
+                <PreferenceRow title="删除全部本地数据"><Button size="sm" variant="danger" onClick={() => setConfirmKind('wipe')}>删除数据</Button></PreferenceRow>
+              </PreferenceGroup>
+            </div>
+          ) : null}
+
+          {tab === 'advanced' ? (
+            <div className="max-w-[760px] space-y-8">
+              <PreferenceGroup title="服务">
+                <PreferenceRow title="API 服务地址" description="留空时使用 Petory 默认服务。">
+                  <Input className="w-[360px]" value={settings.apiBaseUrl} placeholder="使用默认服务" onChange={(event) => void save({ apiBaseUrl: event.target.value.trim() })} />
+                </PreferenceRow>
+              </PreferenceGroup>
+              <PreferenceGroup title="应用维护">
+                <PreferenceRow title="当前版本" description={`Petory v${version}`}>
+                  <Button size="sm" variant="secondary" onClick={() => void window.petory.update.check().then(setUpdateState)}>检查更新</Button>
+                </PreferenceRow>
+                {updateState?.status === 'available' ? <PreferenceRow title={`发现新版本 ${updateState.version}`}><Button size="sm" onClick={() => void window.petory.update.download().then(setUpdateState)}>下载更新</Button></PreferenceRow> : null}
+                {updateState?.status === 'ready' ? <PreferenceRow title="更新已准备好"><Button size="sm" onClick={() => window.petory.update.install()}>安装并重启</Button></PreferenceRow> : null}
+                <PreferenceRow title="新手引导"><Button size="sm" variant="secondary" onClick={() => window.petory.guide.open()}>重新查看</Button></PreferenceRow>
+                <PreferenceRow title="Petory 官网"><Button size="sm" variant="secondary" onClick={() => window.petory.app.openWebsite()}>打开官网</Button></PreferenceRow>
+                {poseStatus?.pending.length ? <PreferenceRow title="补全 Pro 姿势" description={`${poseStatus.pending.length} 只宠物需要补全`}><Button size="sm" variant="secondary" onClick={() => void window.petory.pet.completePoses().then(() => void load())}>开始补全</Button></PreferenceRow> : null}
+                <PreferenceRow title="退出 Petory"><Button size="sm" variant="secondary" onClick={() => window.petory.app.quit()}>退出应用</Button></PreferenceRow>
+              </PreferenceGroup>
+            </div>
+          ) : null}
+        </div>
+      </section>
 
       <ConfirmDialog
         open={confirmKind === 'import'}
-        title={SETTINGS_COPY.data.confirmImport.title}
-        message={SETTINGS_COPY.data.confirmImport.message}
-        confirmLabel={SETTINGS_COPY.data.confirmImport.confirm}
+        title="导入备份"
+        message="导入将覆盖当前桌宠与设置，账号登录状态会保留。确定继续吗？"
+        confirmLabel="继续导入"
         onConfirm={() => {
           setConfirmKind(null)
-          runImport()
+          void window.petory.data.import().then(async (result) => {
+            if (!result.success) {
+              if (!result.cancelled) showStatus(result.message, 'error')
+              return
+            }
+            showStatus(`导入成功，共恢复 ${result.petFileCount} 个资源文件`)
+            await load()
+          })
         }}
         onCancel={() => setConfirmKind(null)}
       />
       <ConfirmDialog
         open={confirmKind === 'wipe'}
-        title={SETTINGS_COPY.data.confirmWipe.title}
-        message={SETTINGS_COPY.data.confirmWipe.message}
-        confirmLabel={SETTINGS_COPY.data.confirmWipe.confirm}
+        title="删除全部本地数据"
+        message="此操作不可恢复，确定删除所有桌宠、聊天与设置吗？"
+        confirmLabel="确定删除"
         danger
-        onConfirm={() => {
-          setConfirmKind(null)
-          runWipe()
-        }}
+        onConfirm={() => void window.petory.data.wipeAll()}
         onCancel={() => setConfirmKind(null)}
       />
-      </div>
     </div>
   )
 }

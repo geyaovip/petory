@@ -5,10 +5,10 @@ import type { ChatMessage } from '@shared/types/chat'
 import type { Pet } from '@shared/types/pet'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { TextButton } from '../components/ui/TextButton'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PanelLoading } from '../components/ui/PanelLoading'
 import { Toggle } from '../components/ui/Toggle'
+import { PanelFrame } from '../components/ui/PanelFrame'
 
 export function ChatPanel(): ReactElement {
   const [pet, setPet] = useState<Pet | null>(null)
@@ -112,20 +112,30 @@ export function ChatPanel(): ReactElement {
   }
 
   return (
-    <div className="flex h-full flex-col bg-petory-bg text-petory-text">
-      <header className="border-b border-petory-border px-4 pb-3 pt-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[18px] font-semibold">{pet.name}</h1>
-            <span className="mt-1 inline-block rounded-full bg-petory-primary-soft px-2 py-0.5 text-[12px] text-petory-primary">
-              {pet.personality}
-            </span>
+    <PanelFrame
+      title={pet.name}
+      subtitle={pet.personality}
+      onClose={() => window.petory.chat.close()}
+      footer={
+        <>
+          <form className="flex gap-2" onSubmit={(e) => void handleSend(e)}>
+            <Input
+              className="flex-1 bg-petory-surface"
+              fullWidth={false}
+              placeholder={CHAT_COPY.placeholder}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={sending}
+            />
+            <Button type="submit" disabled={sending || !input.trim()}>{CHAT_COPY.send}</Button>
+          </form>
+          <div className="mt-3 border-t border-petory-border pt-2">
+            <Toggle checked={saveHistory} onChange={(next) => void handleToggleHistory(next)} label={CHAT_COPY.saveHistory} />
           </div>
-          <TextButton onClick={() => window.petory.chat.close()}>{CHAT_COPY.close}</TextButton>
-        </div>
-      </header>
-
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+        </>
+      }
+    >
+      <div className="space-y-3 px-5 py-5">
         {messages.length === 0 ? (
           <p className="text-center text-[13px] text-petory-text-tertiary">{CHAT_COPY.emptyThread}</p>
         ) : null}
@@ -136,10 +146,10 @@ export function ChatPanel(): ReactElement {
           >
             <div
               className={[
-                'max-w-[75%] rounded-xl px-3 py-2 text-[14px] leading-relaxed',
+                'max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed',
                 msg.role === 'user'
-                  ? 'bg-petory-accent-soft text-petory-text'
-                  : 'bg-petory-primary-soft text-petory-text'
+                  ? 'rounded-br-md bg-petory-primary text-white'
+                  : 'rounded-bl-md border border-petory-border bg-petory-surface text-petory-text'
               ].join(' ')}
             >
               {msg.content}
@@ -157,37 +167,12 @@ export function ChatPanel(): ReactElement {
       </div>
 
       {error ? (
-        <div className="mx-4 mb-2 rounded-lg bg-petory-error-soft px-3 py-2 text-[13px] text-petory-text">
+        <div className="mx-5 mb-3 rounded-lg bg-petory-error-soft px-3 py-2 text-[13px] text-petory-text">
           {error}
         </div>
       ) : null}
 
-      <footer className="border-t border-petory-border px-4 py-3">
-        <div className="mb-3">
-          <Toggle
-            checked={saveHistory}
-            onChange={(next) => void handleToggleHistory(next)}
-            label={CHAT_COPY.saveHistory}
-          />
-        </div>
-        <form className="flex gap-2" onSubmit={(e) => void handleSend(e)}>
-          <Input
-            className="flex-1 bg-petory-surface"
-            fullWidth={false}
-            placeholder={CHAT_COPY.placeholder}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={sending}
-          />
-          <Button type="submit" disabled={sending || !input.trim()}>
-            {CHAT_COPY.send}
-          </Button>
-        </form>
-        <p className="mt-2 text-center text-[11px] text-petory-text-tertiary">
-          {CONTENT_SAFETY.chat}
-        </p>
-        <p className="mt-1 text-center text-[11px] text-petory-text-tertiary">{CHAT_COPY.shortcut}</p>
-      </footer>
-    </div>
+      <p className="px-5 pb-4 text-center text-[10px] text-petory-text-tertiary">{CONTENT_SAFETY.chat} · {CHAT_COPY.shortcut}</p>
+    </PanelFrame>
   )
 }

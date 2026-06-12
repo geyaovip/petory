@@ -46,6 +46,29 @@ label,
   -webkit-app-region: no-drag;
 }
 
+input[type='range'].petory-range {
+  height: 4px;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #ff8a7a 0,
+    #ff8a7a var(--range-progress, 50%),
+    #e8e6e1 var(--range-progress, 50%),
+    #e8e6e1 100%
+  );
+}
+
+input[type='range'].petory-range::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  appearance: none;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #ff8a7a;
+  box-shadow: 0 1px 4px rgba(45, 42, 38, 0.2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
