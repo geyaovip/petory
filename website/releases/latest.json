@@ -1,21 +1,20 @@
 {
-  "version": "2.4.1",
+  "version": "2.4.2",
   "releasedAt": "2026-06-12",
   "mac": {
-    "fileName": "Petory-2.4.1-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.1/Petory-2.4.1-universal.dmg",
+    "fileName": "Petory-2.4.2-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.2/Petory-2.4.2-universal.dmg",
     "sizeLabel": "~183 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.1.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.1/Petory-Setup-2.4.1.exe",
+    "fileName": "Petory-Setup-2.4.2.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.2/Petory-Setup-2.4.2.exe",
     "sizeLabel": "~86 MB"
   },
   "updateFeed": "https://petory.chat/releases",
   "changelog": [
-    "统一官网、客户端与管理端的导航、页脚与 UI 规范",
-    "品牌 logo 与图标仅去除透明边，完整保留图形不再裁切",
-    "登录页简化品牌展示；下载页补充系统要求说明",
-    "管理端登录与侧栏文案优化"
+    "Dock/任务栏图标与浏览器标签 favicon 统一为方形 app-icon",
+    "清理冗余品牌素材（app-icon 副本、avatar、logo-pack）",
+    "品牌资源仅保留 petory_logo 源图，打包前自动 sync:brand"
   ]
 }
