@@ -531,26 +531,19 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 3. 不透明蓝色 squircle 主体保留；半透明且确认为蓝色的边缘像素可加固为不透明  
 4. 图形内部白色（猫脸等）保留；app-icon 居中到透明正方形后 `contain` 缩放，禁止 crop  
 5. 边缘 alpha 羽化 + 小图超采样下采样，避免硬切 alpha 产生锯齿；禁止将半透明蓝边直接 snap 到 255  
-6. **仅 mac 客户端** Dock / `icon.icns` / 运行时 `apple-touch-icon`（`src/renderer/public`）内缩至 **84%**；官网、管理端、favicon、Windows `build/icon.png` 仍用 **96.8%** 裁边  
+6. 透明边距按场景单独配置（`scripts/sync-brand-assets.mjs` → `SCENE_INSET`）；不需要边距的场景 **inset = 1**（铺满画布）  
 
 **Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 
-| 派生资产 | 场景 |
-|----------|------|
-| `logo.png` | 官网导航、客户端登录、管理端登录/侧栏（高度 44–56px） |
-| `favicon-16/32/48.png` | 浏览器标签（**透明圆角 squircle**，`fit:contain` 缩放，禁止 crop） |
-| `apple-touch-icon.png` | 客户端 Dock 运行时图标（**保留透明圆角**） |
-| `icon.png` / `icon.icns` | 安装包与系统图标（**保留透明圆角**，与源图 squircle 一致） |
-
-**各场景引用：**
-
-| 场景 | 文件 |
-|------|------|
-| 官网 / 管理端标签 | `favicon-16/32/48.png` |
-| 客户端标签 | `src/renderer/index.html` → 同上 |
-| 客户端 Dock（dev/运行中） | `loadAppIcon()` → `apple-touch-icon.png` |
-| macOS 安装包 / Dock（安装后） | `build/icon.icns` |
-| Windows 安装包 | `build/icon.png` |
+| 场景 | 输出 | 透明边距 (inset) | 说明 |
+|------|------|------------------|------|
+| 官网 / 管理端 / 客户端标签 | `favicon-16/32/48.png` | **1**（无） | 浏览器自行裁圆角，铺满即可 |
+| 官网 / 管理端书签 | `apple-touch-icon.png` | **1**（无） | 与 favicon 一致，满画布 |
+| mac 客户端 Dock（运行中） | `src/renderer/public/apple-touch-icon.png` | **0.84** | 对齐系统 Dock 视觉尺寸 |
+| macOS 安装包 | `build/icon.icns` | **0.84** | 同 Dock 安全区 |
+| Windows 安装包 | `build/icon.png` | **1**（无） | 系统自行处理圆角 |
+| 归档主图 | `brand/generated/icon.png` | **1**（无） | 仅作派生源，不额外留白 |
+| 导航 wordmark | `logo.png` | — | 横版 logo，非 app icon |
 
 **部署镜像（由 sync 自动复制，勿手改）：**
 

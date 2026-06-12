@@ -22,9 +22,9 @@ const brandDir = path.join(root, 'brand', 'generated')
  * MIRRORS (gitignored, copied on sync — do not hand-edit):
  *   logo.png          → website/assets, src/renderer/public, server/admin/public
  *   favicon-*.png     → website/, src/renderer/public, server/admin/public
- *   apple-touch-icon  → same three (Dock runtime, transparent squircle)
- *   build/icon.png    → electron-builder Windows + fallback
- *   build/icon.icns   → electron-builder macOS
+ *   apple-touch-icon  → website/admin (full bleed); renderer copy uses mac Dock inset
+ *   build/icon.png    → electron-builder Windows (full bleed)
+ *   build/icon.icns   → electron-builder macOS (Dock safe zone)
  *
  * NOT NEEDED (build artifacts — delete freely):
  *   out/renderer/*    — electron-vite copies from src/renderer/public on build
@@ -51,10 +51,18 @@ const FRINGE_LIGHT_MIN = 155
 const FRINGE_MAX_SAT = 95
 const EDGE_RING_DEPTH = 5
 const EDGE_PALE_LIGHT = 162
-/** Minimal inset — trims pale outer ring only (website / admin / tabs / Windows). */
-const ICON_TRIM_INSET = 0.968
-/** macOS Dock safe zone — only for .icns + renderer Dock runtime icon. */
-const MAC_DOCK_INSET = 0.84
+/**
+ * Per-scene transparent margin (1 = no extra padding, max fill).
+ * Pale-edge cleanup is handled separately — not via canvas inset.
+ */
+const SCENE_INSET = {
+  favicon: 1,
+  webAppleTouch: 1,
+  macDockRuntime: 0.84,
+  macInstaller: 0.84,
+  winInstaller: 1,
+  brandArchive: 1
+}
 
 function isWhiteish(r, g, b, a) {
   if (a < 20) return true
@@ -490,7 +498,7 @@ function supersampleFactor(size) {
   return 1
 }
 
-async function writeAppIconAlpha(trimmed, dest, size, { inset = ICON_TRIM_INSET } = {}) {
+async function writeAppIconAlpha(trimmed, dest, size, { inset = 1 } = {}) {
   const factor = supersampleFactor(size)
   const renderSize = size * factor
 
@@ -519,11 +527,11 @@ async function writeFaviconSet(trimmed, outDir) {
   fs.mkdirSync(outDir, { recursive: true })
   for (const size of [16, 32, 48]) {
     const dest = path.join(outDir, `favicon-${size}.png`)
-    await writeAppIconAlpha(trimmed, dest, size)
+    await writeAppIconAlpha(trimmed, dest, size, { inset: SCENE_INSET.favicon })
     console.log(`✓ ${path.relative(root, dest)}`)
   }
   const appleTouch = path.join(outDir, 'apple-touch-icon.png')
-  await writeAppIconAlpha(trimmed, appleTouch, 180)
+  await writeAppIconAlpha(trimmed, appleTouch, 180, { inset: SCENE_INSET.webAppleTouch })
   console.log(`✓ ${path.relative(root, appleTouch)}`)
   await fs.promises.copyFile(path.join(outDir, 'favicon-32.png'), path.join(outDir, 'favicon.png'))
   console.log(`✓ ${path.relative(root, path.join(outDir, 'favicon.png'))}`)
@@ -566,7 +574,7 @@ const appIconTrimmed = await sharp(appSqData, {
 await writeFaviconSet(appIconTrimmed, brandDir)
 
 const iconPng = path.join(brandDir, 'icon.png')
-await writeAppIconAlpha(appIconTrimmed, iconPng, 1024)
+await writeAppIconAlpha(appIconTrimmed, iconPng, 1024, { inset: SCENE_INSET.brandArchive })
 console.log(`✓ ${path.relative(root, iconPng)}`)
 
 const buildDir = path.join(root, 'build')
@@ -580,8 +588,8 @@ fs.mkdirSync(iconset, { recursive: true })
 for (const size of [16, 32, 128, 256, 512]) {
   const out1 = path.join(iconset, `icon_${size}x${size}.png`)
   const out2 = path.join(iconset, `icon_${size}x${size}@2x.png`)
-  await writeAppIconAlpha(appIconTrimmed, out1, size, { inset: MAC_DOCK_INSET })
-  await writeAppIconAlpha(appIconTrimmed, out2, size * 2, { inset: MAC_DOCK_INSET })
+  await writeAppIconAlpha(appIconTrimmed, out1, size, { inset: SCENE_INSET.macInstaller })
+  await writeAppIconAlpha(appIconTrimmed, out2, size * 2, { inset: SCENE_INSET.macInstaller })
 }
 
 const iconIcns = path.join(brandDir, 'icon.icns')
@@ -616,7 +624,7 @@ await writeAppIconAlpha(
   appIconTrimmed,
   path.join(root, 'src/renderer/public/apple-touch-icon.png'),
   180,
-  { inset: MAC_DOCK_INSET }
+  { inset: SCENE_INSET.macDockRuntime }
 )
 await mirrorFile('icon.png', ['build/icon.png'])
 if (fs.existsSync(iconIcns)) {
