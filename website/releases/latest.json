@@ -1,22 +1,21 @@
 {
-  "version": "2.4.0",
-  "releasedAt": "2026-06-11",
+  "version": "2.4.1",
+  "releasedAt": "2026-06-09",
   "mac": {
-    "fileName": "Petory-2.4.0-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.0/Petory-2.4.0-universal.dmg",
+    "fileName": "Petory-2.4.1-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.1/Petory-2.4.1-universal.dmg",
     "sizeLabel": "~182 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.0.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.0/Petory-Setup-2.4.0.exe",
+    "fileName": "Petory-Setup-2.4.1.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.1/Petory-Setup-2.4.1.exe",
     "sizeLabel": "~86 MB"
   },
   "updateFeed": "https://petory.chat/releases",
   "changelog": [
-    "透明像素精细命中：只有点到宠物本体才响应，其余区域穿透",
-    "同伴宠点击可短暂切换开心姿势；主宠状态音效（设置中开启）",
-    "宠物管理支持单姿势重生成，不消耗每日生成额度",
-    "成长页：小成就徽章、最近互动、姿势数量",
-    "导出包增强（云同步预留）"
+    "统一官网、客户端与管理端的导航、页脚与 UI 规范",
+    "品牌 logo 与图标仅去除透明边，完整保留图形不再裁切",
+    "登录页简化品牌展示；下载页补充系统要求说明",
+    "管理端登录与侧栏文案优化"
   ]
 }
