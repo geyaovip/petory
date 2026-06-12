@@ -524,7 +524,7 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 | `wordmark.png` | 横版 logo（白底）→ `brand/generated/logo.png` |
 | `app-icon.png` | 方形 app 图标（白底）→ favicon / Dock / 安装包 |
 
-处理规则：从边缘泛洪去除白色背景变透明；图形内部的白色（如猫脸）保留；其他颜色不动。
+处理规则：从边缘泛洪去除白色背景变透明；对边缘做白底溢色还原（decontaminate）并剔除灰/浅色半透明 halo；图形内部的白色（如猫脸）保留；app-icon 先居中到透明正方形再缩放，保证四角圆角一致。
 
 **Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 

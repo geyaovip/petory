@@ -40,6 +40,8 @@ const sources = {
 const TRIM_THRESHOLD = 12
 const WHITE_MIN = 245
 const WHITE_SPREAD = 18
+const FRINGE_MIN_ALPHA = 56
+const FRINGE_LIGHT_MIN = 188
 
 const APP_ICON_ZOOM = {
   16: 1.2,
@@ -128,6 +130,92 @@ function keyWhiteBackgroundRgba(data, width, height) {
   }
 }
 
+/** Undo white-background premultiplication on semi-transparent edge pixels. */
+function decontaminateWhiteSpill(data, width, height) {
+  const channels = 4
+  const size = width * height
+
+  for (let p = 0; p < size; p++) {
+    const i = p * channels
+    const a = data[i + 3] / 255
+    if (a <= 0.02 || a >= 0.995) continue
+
+    const r = data[i]
+    const g = data[i + 1]
+    const b = data[i + 2]
+    const inv = 1 - a
+
+    data[i] = Math.max(0, Math.min(255, Math.round((r - inv * 255) / a)))
+    data[i + 1] = Math.max(0, Math.min(255, Math.round((g - inv * 255) / a)))
+    data[i + 2] = Math.max(0, Math.min(255, Math.round((b - inv * 255) / a)))
+  }
+}
+
+/** Drop faint light / gray halos that survive flood-fill (squircle anti-alias). */
+function pruneLightFringe(data, width, height) {
+  const channels = 4
+  const size = width * height
+
+  for (let p = 0; p < size; p++) {
+    const i = p * channels
+    const r = data[i]
+    const g = data[i + 1]
+    const b = data[i + 2]
+    const a = data[i + 3]
+    if (a === 0 || a === 255) continue
+
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    const sat = max - min
+    const light = (r + g + b) / 3
+
+    if (a < 24) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+      continue
+    }
+
+    if (a < FRINGE_MIN_ALPHA && light >= FRINGE_LIGHT_MIN) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+      continue
+    }
+
+    if (light >= 248 && a < 160) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+      continue
+    }
+
+    // Gray/cream spill on squircle edges after resize (e.g. bottom Dock halo).
+    if (a < 140 && sat < 52 && light > 85) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+      continue
+    }
+
+    if (a < 96 && sat < 80) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+    }
+  }
+}
+
+function postKeyRgba(data, width, height) {
+  decontaminateWhiteSpill(data, width, height)
+  pruneLightFringe(data, width, height)
+}
+
 async function loadKeyedSource(fileName) {
   const from = path.join(srcDir, fileName)
   if (!fs.existsSync(from)) {
@@ -136,6 +224,7 @@ async function loadKeyedSource(fileName) {
 
   const { data, info } = await sharp(from).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   keyWhiteBackgroundRgba(data, info.width, info.height)
+  postKeyRgba(data, info.width, info.height)
 
   return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .png()
@@ -144,6 +233,20 @@ async function loadKeyedSource(fileName) {
 
 async function trimmedBuffer(keyed) {
   return sharp(keyed).trim({ threshold: TRIM_THRESHOLD }).png().toBuffer()
+}
+
+/** Centre non-square art on a transparent square so corners stay symmetric when scaled. */
+async function squaredAppIconBuffer(keyed) {
+  const trimmed = await trimmedBuffer(keyed)
+  const meta = await sharp(trimmed).metadata()
+  const side = Math.max(meta.width ?? 0, meta.height ?? 0)
+  return sharp(trimmed)
+    .resize(side, side, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    })
+    .png()
+    .toBuffer()
 }
 
 async function writeTrimmedWordmark(keyed, toPath) {
@@ -163,7 +266,14 @@ function zoomedPipeline(trimmed, size) {
 }
 
 async function writeAppIconAlpha(trimmed, dest, size) {
-  await zoomedPipeline(trimmed, size).png().toFile(dest)
+  const { data, info } = await zoomedPipeline(trimmed, size)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  pruneLightFringe(data, info.width, info.height)
+  await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .png()
+    .toFile(dest)
 }
 
 async function writeFaviconSet(trimmed, outDir) {
@@ -202,7 +312,7 @@ const wordmarkKeyed = await loadKeyedSource(sources.wordmark)
 await writeTrimmedWordmark(wordmarkKeyed, path.join(brandDir, 'logo.png'))
 
 const appIconKeyed = await loadKeyedSource(sources.appIcon)
-const appIconTrimmed = await trimmedBuffer(appIconKeyed)
+const appIconTrimmed = await squaredAppIconBuffer(appIconKeyed)
 
 await writeFaviconSet(appIconTrimmed, brandDir)
 
