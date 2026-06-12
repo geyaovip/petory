@@ -166,7 +166,8 @@ function isPaleSpill(r, g, b, a) {
 
 /**
  * Remove white / pale halos. May adjust edge blues contaminated by white matte.
- * Does not remove opaque core blue squircle pixels.
+ * Does not remove opaque core blue squircle pixels. Never snaps partial alpha to 255
+ * (that causes visible jaggies on Dock / tab icons).
  */
 function cleanEdgeSpill(data, width, height) {
   const channels = 4
@@ -182,11 +183,6 @@ function cleanEdgeSpill(data, width, height) {
     if (a === 255) continue
 
     if (a === 0) continue
-
-    if (isCoreBlue(r, g, b) && a >= 140) {
-      data[i + 3] = 255
-      continue
-    }
 
     if (isPaleSpill(r, g, b, a) || (a < 36 && !isCoreBlue(r, g, b))) {
       data[i] = 0
@@ -268,10 +264,43 @@ function floodExteriorSpill(data, width, height) {
   }
 }
 
-function postKeyAppIconRgba(data, width, height) {
+/** Soften alpha at transparent↔opaque boundaries to remove stair-step jaggies. */
+function featherAlphaEdges(data, width, height, passes = 2) {
+  const channels = 4
+  const size = width * height
+
+  for (let pass = 0; pass < passes; pass++) {
+    const alpha = new Uint8Array(size)
+    for (let p = 0; p < size; p++) alpha[p] = data[p * channels + 3]
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const p = y * width + x
+        const a = alpha[p]
+        const n = [alpha[p - 1], alpha[p + 1], alpha[p - width], alpha[p + width]]
+        const nearTransparent = a < 28 || n.some((v) => v < 28)
+        const nearOpaque = a > 220 || n.some((v) => v > 220)
+        if (!(nearTransparent && nearOpaque)) continue
+
+        let sum = 0
+        let count = 0
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            sum += alpha[(y + dy) * width + (x + dx)]
+            count++
+          }
+        }
+        data[p * channels + 3] = Math.round(sum / count)
+      }
+    }
+  }
+}
+
+function postKeyAppIconRgba(data, width, height, { feather = true } = {}) {
   decontaminateWhiteSpill(data, width, height)
   cleanEdgeSpill(data, width, height)
   floodExteriorSpill(data, width, height)
+  if (feather) featherAlphaEdges(data, width, height, 2)
 }
 
 function postKeyRgba(data, width, height) {
@@ -327,15 +356,36 @@ function resizeAppIcon(trimmed, size) {
   })
 }
 
+function supersampleFactor(size) {
+  if (size <= 32) return 4
+  if (size <= 64) return 3
+  if (size <= 256) return 2
+  return 1
+}
+
 async function writeAppIconAlpha(trimmed, dest, size) {
-  const { data, info } = await resizeAppIcon(trimmed, size)
+  const factor = supersampleFactor(size)
+  const renderSize = size * factor
+
+  const { data, info } = await resizeAppIcon(trimmed, renderSize)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
-  postKeyAppIconRgba(data, info.width, info.height)
-  await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
-    .png()
-    .toFile(dest)
+
+  postKeyAppIconRgba(data, info.width, info.height, { feather: true })
+
+  let pipeline = sharp(data, {
+    raw: { width: info.width, height: info.height, channels: 4 }
+  })
+
+  if (factor > 1) {
+    pipeline = pipeline.resize(size, size, {
+      kernel: sharp.kernel.lanczos3,
+      fit: 'fill'
+    })
+  }
+
+  await pipeline.png().toFile(dest)
 }
 
 async function writeFaviconSet(trimmed, outDir) {

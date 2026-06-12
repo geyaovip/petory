@@ -530,6 +530,7 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 2. 白底溢色还原（decontaminate）+ 剔除白/浅色 halo（含边缘被白污染的浅蓝像素）  
 3. 不透明蓝色 squircle 主体保留；半透明且确认为蓝色的边缘像素可加固为不透明  
 4. 图形内部白色（猫脸等）保留；app-icon 居中到透明正方形后 `contain` 缩放，禁止 crop  
+5. 边缘 alpha 羽化 + 小图超采样下采样，避免硬切 alpha 产生锯齿；禁止将半透明蓝边直接 snap 到 255  
 
 **Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 
