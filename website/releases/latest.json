@@ -1,14 +1,14 @@
 {
-  "version": "2.4.4",
+  "version": "2.4.5",
   "releasedAt": "2026-06-12",
   "mac": {
-    "fileName": "Petory-2.4.4-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.4/Petory-2.4.4-universal.dmg",
+    "fileName": "Petory-2.4.5-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.5/Petory-2.4.5-universal.dmg",
     "sizeLabel": "~183 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.4.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.4/Petory-Setup-2.4.4.exe",
+    "fileName": "Petory-Setup-2.4.5.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.5/Petory-Setup-2.4.5.exe",
     "sizeLabel": "~86 MB"
   },
   "updateFeed": "https://petory.chat/releases",
