@@ -57,6 +57,10 @@ export interface RegisterInput {
   displayName?: string
 }
 
+export type MagicLinkRequestResult =
+  | { success: true; message: string }
+  | { success: false; message: string }
+
 export interface PoseCompletionSummary {
   added: number
   pets: number

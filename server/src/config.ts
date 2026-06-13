@@ -24,6 +24,8 @@ export const config = {
   operatorEmail: (process.env.OPERATOR_EMAIL ?? 'operator@petory.app').toLowerCase(),
   operatorPassword: process.env.OPERATOR_PASSWORD ?? 'petory-operator',
   publicBaseUrl: (process.env.PUBLIC_BASE_URL ?? 'http://localhost:8787').replace(/\/$/, ''),
+  resendApiKey: process.env.RESEND_API_KEY ?? '',
+  mailFrom: process.env.MAIL_FROM ?? 'Petory <noreply@petory.chat>',
   uploadsDir: path.join(process.cwd(), 'uploads'),
   maxUploadBytes: 10 * 1024 * 1024,
   jobTimeoutMs: 60_000,

@@ -417,7 +417,7 @@ export function createPomodoroWindow(): BrowserWindow {
   pomodoroWindow = createPanelWindow(
     holder,
     'pomodoro',
-    { width: 380, height: 500, minWidth: 340, minHeight: 440 },
+    { width: 400, height: 620, minWidth: 360, minHeight: 560 },
     'Petory — Focus',
     { x: 0, y: 0 }
   )

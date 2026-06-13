@@ -1,10 +1,15 @@
-import type { AuthActionResult, AuthState, LoginInput, RegisterInput } from '../../../src/shared/types/auth'
+import type {
+  AuthActionResult,
+  AuthState,
+  LoginInput,
+  MagicLinkRequestResult,
+  RegisterInput
+} from '../../../src/shared/types/auth'
 import { isRemoteBackendEnabled } from '../api/config'
 import { refreshAppStatus } from '../api/appStatus'
 import { ensureRemoteQuotaFresh } from '../api/remoteQuotaStore'
 import { buildAuthState } from './entitlementService'
 import { clearSession, loadSession } from './authStore'
-import * as mock from './mockAuth'
 import * as remote from './remoteAuth'
 
 export function getAuthState() {
@@ -13,7 +18,11 @@ export function getAuthState() {
 
 export function rejectLegacyOfflineSession(): void {
   const session = loadSession()
-  if (session?.mode === 'offline') {
+  if (
+    session?.mode === 'offline' ||
+    session?.token === 'offline' ||
+    session?.token.startsWith('mock_')
+  ) {
     clearSession()
   }
 }
@@ -24,31 +33,31 @@ export function isAuthenticated(): boolean {
 }
 
 export async function login(input: LoginInput): Promise<AuthActionResult> {
-  if (isRemoteBackendEnabled()) return remote.remoteLogin(input)
-  return mock.login(input)
+  return remote.remoteLogin(input)
+}
+
+export async function requestMagicLink(email: string): Promise<MagicLinkRequestResult> {
+  return remote.remoteRequestMagicLink(email)
+}
+
+export async function consumeMagicLink(token: string): Promise<AuthActionResult> {
+  return remote.remoteConsumeMagicLink(token)
 }
 
 export async function register(input: RegisterInput): Promise<AuthActionResult> {
-  if (isRemoteBackendEnabled()) return remote.remoteRegister(input)
-  return mock.register(input)
+  return remote.remoteRegister(input)
 }
 
 export async function logout(): Promise<AuthActionResult> {
-  if (isRemoteBackendEnabled() && loadSession()?.mode === 'account') {
-    return remote.remoteLogout()
-  }
-  return mock.logout()
+  return remote.remoteLogout()
 }
 
 export async function redeemCode(code: string): Promise<AuthActionResult> {
-  if (isRemoteBackendEnabled() && loadSession()?.mode === 'account') {
-    return remote.remoteRedeemCode(code)
-  }
-  return mock.redeemCode(code)
+  return remote.remoteRedeemCode(code)
 }
 
 export function clearAuthData(): void {
-  mock.clearAuthData()
+  clearSession()
 }
 
 export async function bootstrapRemoteSession(): Promise<void> {

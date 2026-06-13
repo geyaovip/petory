@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, screen } from 'electron'
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, screen } from 'electron'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -7,38 +7,21 @@ import { loadDockIcon } from './appIcon'
 import { ERROR_MESSAGES } from '../../src/shared/constants'
 import { IPC, type MenuAction, type UploadPayload, type WindowPosition } from '../../src/shared/ipc'
 import type { PetVisualState } from '../../src/shared/types/growth'
+import type { PomodoroStartInput } from '../../src/shared/types/pomodoro'
 import { getPosesForPlan } from '../../src/shared/poses'
 import type { FinalizePetInput, PetPersonality, PetPoseType, PetStyleType } from '../../src/shared/types/pet'
-import {
-  broadcastPetsListChanged,
-  listPetsNeedingPoseCompletion,
-  resolvePoseImagePath
-} from './poseService'
+import { broadcastPetsListChanged, listPetsNeedingPoseCompletion, resolvePoseImagePath } from './poseService'
 import { clearChatSession, handleSendChat } from './chat/handlers'
-import {
-  clearChatHistory,
-  getChatHistory,
-  loadChatSettings,
-  saveChatSettings
-} from './chatStore'
+import { clearChatHistory, getChatHistory, loadChatSettings, saveChatSettings } from './chatStore'
 import { runCompletePosesPipeline, runGenerationPipeline } from './image/pipeline'
 import { completeMissingPosesForAllPets, isPoseCompletionRunning } from './poseCompletionService'
 import { isPoseRegenerationRunning, regeneratePetPose } from './poseRegenerationService'
 import { getCurrentUser } from './auth/authStore'
-import { installSamplePet } from './samplePet'
+import { installSamplePet, refreshInstalledSamplePets } from './samplePet'
 import { getStyleCatalog } from './styleService'
-import {
-  checkForUpdates,
-  downloadUpdate,
-  getUpdateState,
-  initAutoUpdater,
-  quitAndInstallUpdate
-} from './updateService'
+import { checkForUpdates, downloadUpdate, getUpdateState, initAutoUpdater, quitAndInstallUpdate } from './updateService'
 import { initCrashReporter, recordCrash } from './crashReporter'
-import {
-  hasAcceptedLegal,
-  saveLegalAcceptance
-} from './legalStore'
+import { hasAcceptedLegal, saveLegalAcceptance } from './legalStore'
 import {
   bootstrapRemoteSession,
   buildAuthState,
@@ -50,6 +33,8 @@ import {
   getAuthState,
   isAuthenticated,
   login,
+  requestMagicLink,
+  consumeMagicLink,
   logout,
   redeemCode,
   register
@@ -68,14 +53,7 @@ import {
   openWebsiteUrl,
   wipeAllLocalData
 } from './dataService'
-import {
-  activatePet,
-  finalizePet,
-  getActivePet,
-  getPetById,
-  loadStore,
-  updatePet
-} from './petStore'
+import { activatePet, finalizePet, getActivePet, getPetById, loadStore, updatePet } from './petStore'
 import {
   getDesktopPetStatus,
   hidePetFromDesktop,
@@ -86,14 +64,8 @@ import {
 import { consumeOnboardingIntent, setOnboardingIntent } from './onboardingIntent'
 import { saveUpload, validateUpload } from './upload'
 import { getGrowthStats, handleDailyOpenRewards } from './growthService'
-import {
-  endPomodoro,
-  getPomodoroState,
-  pausePomodoro,
-  resumePomodoro,
-  startPomodoro
-} from './pomodoroService'
-import { getPetVisualState } from './petStateService'
+import { endPomodoro, getPomodoroState, pausePomodoro, resumePomodoro, startPomodoro } from './pomodoroService'
+import { getPetVisualState, setPetVisualState } from './petStateService'
 import { loadUserSettings, patchUserSettings } from './settingsStore'
 import {
   confirmSedentaryRest,
@@ -172,6 +144,22 @@ function clearStaleDevSingletonLocks(): void {
 
 clearStaleDevSingletonLocks()
 
+const AUTH_PROTOCOL = 'petory'
+let pendingAuthDeepLink = process.argv.find((arg) => arg.startsWith(`${AUTH_PROTOCOL}://`)) ?? null
+let authDeepLinkInFlight = false
+
+if (app.isPackaged) {
+  app.setAsDefaultProtocolClient(AUTH_PROTOCOL)
+} else if (process.defaultApp && process.argv[1]) {
+  app.setAsDefaultProtocolClient(AUTH_PROTOCOL, process.execPath, [path.resolve(process.argv[1])])
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  if (app.isReady()) void handleAuthDeepLink(url)
+  else pendingAuthDeepLink = url
+})
+
 if (app.isPackaged) {
   const hasSingleInstanceLock = app.requestSingleInstanceLock()
   if (!hasSingleInstanceLock) {
@@ -179,9 +167,10 @@ if (app.isPackaged) {
     process.exit(0)
   }
 
-  app.on('second-instance', () => {
-    const focusTarget =
-      getPetWindow() ?? getAuthWindow() ?? getOnboardingWindow() ?? BrowserWindow.getAllWindows()[0]
+  app.on('second-instance', (_event, argv) => {
+    const deepLink = argv.find((arg) => arg.startsWith(`${AUTH_PROTOCOL}://`))
+    if (deepLink) void handleAuthDeepLink(deepLink)
+    const focusTarget = getPetWindow() ?? getAuthWindow() ?? getOnboardingWindow() ?? BrowserWindow.getAllWindows()[0]
     if (focusTarget && !focusTarget.isDestroyed()) {
       if (focusTarget.isMinimized()) focusTarget.restore()
       focusTarget.focus()
@@ -203,13 +192,45 @@ function enterAppAfterAuth(): void {
   bootstrapMainApp()
 }
 
+async function handleAuthDeepLink(rawUrl: string): Promise<void> {
+  if (authDeepLinkInFlight) return
+  let token = ''
+  try {
+    const url = new URL(rawUrl)
+    if (url.protocol !== `${AUTH_PROTOCOL}:` || url.hostname !== 'auth' || url.pathname !== '/callback') {
+      return
+    }
+    token = url.searchParams.get('token') ?? ''
+  } catch {
+    return
+  }
+  if (!token) return
+
+  authDeepLinkInFlight = true
+  try {
+    createAuthWindow()
+    const result = await consumeMagicLink(token)
+    if (!result.success) {
+      dialog.showErrorBox('登录失败', result.message)
+      return
+    }
+    broadcastAuthStateChanged()
+    enterAppAfterAuth()
+  } finally {
+    authDeepLinkInFlight = false
+  }
+}
+
 function buildContextMenu(): Menu {
+  const focusActive = getPomodoroState().phase !== 'idle'
   return Menu.buildFromTemplate([
     { label: '和它说话', click: () => openChatWindow() },
-    { label: '开始专注', click: () => openPomodoroWindow() },
+    {
+      label: focusActive ? '查看专注' : '开始专注',
+      click: () => openPomodoroWindow()
+    },
     { label: '查看成长', click: () => openGrowthWindow() },
     { type: 'separator' },
-    { label: '更换宠物', click: () => openPetsWindow() },
     { label: '宠物管理', click: () => openPetsWindow() },
     { label: '设置', click: () => openSettingsWindow() },
     { label: '隐藏桌宠', click: () => sendMenuAction('hide') },
@@ -334,16 +355,13 @@ function registerIpc(): void {
     return readImageDataUrl(imagePath)
   })
 
-  ipcMain.handle(
-    IPC.pet.getImage,
-    (_event, petId: string, pose: PetVisualState = 'idle'): string | null => {
+  ipcMain.handle(IPC.pet.getImage, (_event, petId: string, pose: PetVisualState = 'idle'): string | null => {
       const pet = getPetById(petId)
       if (!pet) return null
       const imagePath = resolvePoseImagePath(pet, pose)
       if (!imagePath) return null
       return readImageDataUrl(imagePath)
-    }
-  )
+  })
 
   ipcMain.handle(IPC.pet.getSummary, (_event, petId: string) => {
     const pet = getPetById(petId)
@@ -500,8 +518,12 @@ function registerIpc(): void {
   })
 
   ipcMain.on(IPC.pet.recordActivity, () => {
+    const visualState = getPetVisualState()
     touchActivity()
     resetSedentaryTimer()
+    if (visualState === 'idle' || visualState === 'sleep') {
+      setPetVisualState('happy', 2800)
+    }
   })
 
   ipcMain.handle(IPC.pet.getPoseCompletionStatus, () => {
@@ -544,7 +566,7 @@ function registerIpc(): void {
   ipcMain.on(IPC.pomodoro.open, () => openPomodoroWindow())
   ipcMain.on(IPC.pomodoro.close, () => closePomodoroWindow())
   ipcMain.handle(IPC.pomodoro.getState, () => getPomodoroState())
-  ipcMain.handle(IPC.pomodoro.start, () => startPomodoro())
+  ipcMain.handle(IPC.pomodoro.start, (_event, input?: PomodoroStartInput) => startPomodoro(input))
   ipcMain.handle(IPC.pomodoro.pause, () => pausePomodoro())
   ipcMain.handle(IPC.pomodoro.resume, () => resumePomodoro())
   ipcMain.handle(IPC.pomodoro.end, () => endPomodoro())
@@ -569,14 +591,19 @@ function registerIpc(): void {
   ipcMain.on(IPC.pets.open, () => openPetsWindow())
   ipcMain.on(IPC.pets.close, () => closePetsWindow())
   ipcMain.handle(IPC.pets.list, () => listManagedPets())
-  ipcMain.handle(
-    IPC.pets.updatePersonality,
-    (_event, personality: PetPersonality, petId?: string) => {
+  ipcMain.handle(IPC.pets.updateName, (_event, petId: string, name: string) => {
+    const nextName = name.trim()
+    if (!nextName) throw new Error('宠物名称不能为空')
+    if (nextName.length > 20) throw new Error('宠物名称不能超过 20 个字符')
+    const pet = updatePet(petId, { name: nextName })
+    broadcastPetsListChanged()
+    return pet
+  })
+  ipcMain.handle(IPC.pets.updatePersonality, (_event, personality: PetPersonality, petId?: string) => {
       const id = petId ?? getActivePet()?.id
       if (!id) throw new Error('No pet found')
       return updatePet(id, { personality })
-    }
-  )
+  })
 
   ipcMain.handle(IPC.desktop.getStatus, () => getDesktopPetStatus())
   ipcMain.handle(IPC.desktop.list, () => listDesktopPetSummaries())
@@ -655,6 +682,10 @@ function registerIpc(): void {
   })
 
   ipcMain.handle(IPC.auth.getState, () => getAuthState())
+
+  ipcMain.handle(IPC.auth.requestMagicLink, async (_event, email: string) => {
+    return requestMagicLink(email)
+  })
 
   ipcMain.handle(IPC.auth.refresh, async () => {
     const state = await refreshAuthState()
@@ -767,6 +798,7 @@ function registerChatShortcut(): void {
 }
 
 function bootstrapMainApp(): void {
+  refreshInstalledSamplePets()
   const hasActive = getActivePet() !== null
   if (hasActive) {
     syncAllDesktopPets()
@@ -853,6 +885,11 @@ app.whenReady().then(async () => {
   initAutoUpdater()
   try {
     await bootstrapOnLaunch()
+    if (pendingAuthDeepLink) {
+      const deepLink = pendingAuthDeepLink
+      pendingAuthDeepLink = null
+      await handleAuthDeepLink(deepLink)
+    }
   } catch (error) {
     console.error('[petory] bootstrap failed — opening auth window:', error)
     recordCrash('main', error, 'bootstrapOnLaunch')

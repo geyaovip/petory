@@ -1,6 +1,10 @@
 appId: com.petory.app
 productName: Petory
 copyright: Copyright © 2026 Petory
+protocols:
+  - name: Petory Login
+    schemes:
+      - petory
 directories:
   output: release
   buildResources: build

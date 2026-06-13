@@ -21,6 +21,7 @@ import { Pill } from '../components/ui/Pill'
 import { StatusBanner, type StatusVariant } from '../components/ui/StatusBanner'
 import { Toggle } from '../components/ui/Toggle'
 import { ProUpgradeSection } from './ProUpgradeSection'
+import { PanelTitleBar } from '../components/ui/PanelTitleBar'
 
 type SettingsTab = 'account' | 'pet' | 'reminders' | 'privacy' | 'advanced'
 type ConfirmKind = 'import' | 'wipe' | null
@@ -77,6 +78,7 @@ export function SettingsPanel(): ReactElement {
   const [activePersonality, setActivePersonality] = useState<PetPersonality | null>(null)
   const [authState, setAuthState] = useState<AuthState | null>(null)
   const [redeemCode, setRedeemCode] = useState('')
+  const [apiBaseUrlDraft, setApiBaseUrlDraft] = useState('')
   const [updateState, setUpdateState] = useState<UpdateState | null>(null)
   const [poseStatus, setPoseStatus] = useState<PoseCompletionStatus | null>(null)
   const [status, setStatus] = useState<{ message: string; variant: StatusVariant } | null>(null)
@@ -93,6 +95,7 @@ export function SettingsPanel(): ReactElement {
       window.petory.pet.getPoseCompletionStatus()
     ])
     setSettings(nextSettings)
+    setApiBaseUrlDraft(nextSettings.apiBaseUrl)
     setVersion(nextVersion)
     setActivePet(pet)
     setActivePersonality(pet?.personality ?? null)
@@ -128,12 +131,10 @@ export function SettingsPanel(): ReactElement {
   const tabCopy = TAB_COPY[tab]
 
   return (
-    <div className="flex h-full min-h-0 bg-petory-bg text-petory-text">
-      <aside className="flex w-[220px] shrink-0 flex-col border-r border-petory-border bg-petory-surface/45 px-4 pb-5 pt-6">
-        <div className="electron-drag px-3 pb-6 pt-2">
-          <p className="text-[20px] font-semibold tracking-[-0.02em]">Petory</p>
-          <p className="mt-1 text-[11px] text-petory-text-tertiary">偏好设置 · v{version}</p>
-        </div>
+    <div className="flex h-full min-h-0 flex-col bg-petory-bg text-petory-text">
+      <PanelTitleBar title="设置" subtitle={`Petory v${version}`} onClose={() => window.petory.settings.close()} />
+      <div className="flex min-h-0 flex-1">
+      <aside className="flex w-[220px] shrink-0 flex-col border-r border-petory-border bg-petory-surface px-4 py-5">
         <nav className="space-y-1" aria-label="设置分类">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
@@ -175,21 +176,11 @@ export function SettingsPanel(): ReactElement {
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="electron-drag flex h-[104px] shrink-0 items-center justify-between border-b border-petory-border px-10">
-          <div>
-            <h1 className="text-[26px] font-semibold tracking-[-0.025em]">{tabCopy.title}</h1>
-            <p className="mt-1 text-[13px] text-petory-text-tertiary">{tabCopy.subtitle}</p>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-10 py-8">
+          <div className="mb-7">
+            <h1 className="text-[25px] font-semibold tracking-[-0.025em]">{tabCopy.title}</h1>
+            <p className="mt-1.5 text-[13px] text-petory-text-tertiary">{tabCopy.subtitle}</p>
           </div>
-          <button
-            type="button"
-            className="electron-no-drag rounded-lg px-3 py-2 text-[13px] font-medium text-petory-text-secondary hover:bg-petory-muted"
-            onClick={() => window.petory.settings.close()}
-          >
-            关闭
-          </button>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-10 py-7">
           {status ? <StatusBanner className="mb-5" message={status.message} variant={status.variant} /> : null}
 
           {tab === 'account' ? (
@@ -342,7 +333,28 @@ export function SettingsPanel(): ReactElement {
             <div className="max-w-[760px] space-y-8">
               <PreferenceGroup title="服务">
                 <PreferenceRow title="API 服务地址" description="留空时使用 Petory 默认服务。">
-                  <Input className="w-[360px]" value={settings.apiBaseUrl} placeholder="使用默认服务" onChange={(event) => void save({ apiBaseUrl: event.target.value.trim() })} />
+                  <div className="flex w-[420px] gap-2">
+                    <Input
+                      value={apiBaseUrlDraft}
+                      placeholder="使用默认服务"
+                      onChange={(event) => setApiBaseUrlDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur()
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={apiBaseUrlDraft.trim() === settings.apiBaseUrl}
+                      onClick={() => {
+                        const apiBaseUrl = apiBaseUrlDraft.trim()
+                        setApiBaseUrlDraft(apiBaseUrl)
+                        void save({ apiBaseUrl }).then(() => showStatus('服务地址已保存'))
+                      }}
+                    >
+                      保存
+                    </Button>
+                  </div>
                 </PreferenceRow>
               </PreferenceGroup>
               <PreferenceGroup title="应用维护">
@@ -360,6 +372,7 @@ export function SettingsPanel(): ReactElement {
           ) : null}
         </div>
       </section>
+      </div>
 
       <ConfirmDialog
         open={confirmKind === 'import'}

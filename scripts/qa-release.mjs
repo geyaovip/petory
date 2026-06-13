@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { verifyBrandAssets } from './verify-brand-assets.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
@@ -34,6 +35,8 @@ const requiredFiles = [
   'resources/sample/pet.svg',
   'brand/generated/logo.png',
   'brand/generated/favicon.png',
+  'brand/generated/apple-touch-icon.png',
+  'brand/generated/dock-icon.png',
   'brand/generated/icon.png',
   'brand/generated/icon.icns'
 ]
@@ -44,6 +47,14 @@ for (const file of requiredFiles) {
   } else {
     fail(`missing ${file}`)
   }
+}
+
+const brandVerification = await verifyBrandAssets(root)
+for (const warning of brandVerification.warnings) console.warn(`⚠ ${warning}`)
+if (brandVerification.ok) {
+  ok('brand icon geometry, transparency, and safe zones verified')
+} else {
+  for (const error of brandVerification.errors) fail(`brand asset: ${error}`)
 }
 
 const manifest = readJson('website/releases/latest.json')

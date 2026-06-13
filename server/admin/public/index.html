@@ -4,17 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Petory 管理后台</title>
-    <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=7" />
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=7" />
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=7" />
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7" />
+    <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=10" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=10" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=10" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=10" />
     <link rel="stylesheet" href="admin.css" />
     <script src="admin-labels.js"></script>
   </head>
   <body>
     <div id="loginScreen" class="login-wrap">
       <div class="login-card">
-        <img class="brand-logo" src="logo.png?v=9" alt="Petory" />
+        <img class="brand-logo" src="logo.png?v=10" alt="Petory" />
         <h1>管理后台</h1>
         <p class="muted">登录以管理用户、生成任务与系统配置</p>
         <label class="field" style="margin-top: 20px">
@@ -35,7 +35,7 @@
     <div id="appShell" class="shell hidden">
       <aside id="adminSidebar" class="sidebar">
         <div class="brand">
-          <img class="brand-logo" src="logo.png?v=9" alt="Petory" />
+          <img class="brand-logo" src="logo.png?v=10" alt="Petory" />
           <span>运营控制台</span>
         </div>
         <div class="nav-group">
@@ -100,10 +100,15 @@
           </section>
 
           <section id="view-config" class="view">
-            <div class="card">
-              <h3>系统配置</h3>
-              <div class="grid2" id="configForm"></div>
-              <div class="row">
+            <div class="card config-card">
+              <div class="config-card-head">
+                <div>
+                  <h3>系统配置</h3>
+                  <p class="muted">调整用户额度、服务状态和客户端公告。</p>
+                </div>
+              </div>
+              <div id="configForm"></div>
+              <div class="config-actions">
                 <button id="saveConfigBtn" class="primary" type="button">保存配置</button>
               </div>
               <p id="configErr" class="err hidden"></p>
@@ -135,20 +140,26 @@
           </section>
 
           <section id="view-commerce" class="view">
-            <div class="card">
-              <h3>支付订单</h3>
-              <div id="paymentOrders" class="table-wrap"></div>
-              <div id="paymentPagination" class="pagination-wrap"></div>
+            <div class="tabs">
+              <button class="tab active" type="button" data-commerce-tab="payments">支付订单</button>
+              <button class="tab" type="button" data-commerce-tab="codes">兑换码</button>
             </div>
-            <div class="card">
-              <h3>兑换码</h3>
-              <div id="redeemCreate" class="row">
-                <input id="newCode" placeholder="新兑换码，如 PETORY-PRO-2026" style="flex: 1" />
-                <input id="newCodeUses" type="number" placeholder="次数" value="10" style="width: 88px" />
-                <button id="createCodeBtn" class="primary" type="button">创建</button>
+            <div id="commerce-payments" class="subview active">
+              <div class="card">
+                <div id="paymentOrders" class="table-wrap"></div>
+                <div id="paymentPagination" class="pagination-wrap"></div>
               </div>
-              <div id="codesTable" class="table-wrap" style="margin-top: 12px"></div>
-              <div id="codesPagination" class="pagination-wrap"></div>
+            </div>
+            <div id="commerce-codes" class="subview">
+              <div class="card">
+                <div id="redeemCreate" class="row" style="margin-top: 0">
+                  <input id="newCode" placeholder="新兑换码，如 PETORY-PRO-2026" style="flex: 1" />
+                  <input id="newCodeUses" type="number" placeholder="次数" value="10" style="width: 88px" />
+                  <button id="createCodeBtn" class="primary" type="button">创建</button>
+                </div>
+                <div id="codesTable" class="table-wrap" style="margin-top: 12px"></div>
+                <div id="codesPagination" class="pagination-wrap"></div>
+              </div>
             </div>
           </section>
 
@@ -350,36 +361,72 @@
       function renderConfigForm(cfg) {
         configDraft = { ...cfg }
         const { maps, esc } = F()
-        const fields = [
+        const usageFields = [
           { key: 'freeDailyGenerationLimit', type: 'number' },
           { key: 'proDailyGenerationLimit', type: 'number' },
           { key: 'freeDailyChatLimit', type: 'number' },
           { key: 'proDailyChatLimit', type: 'number' },
-          { key: 'jobTimeoutSeconds', cfgKey: 'jobTimeoutMs', type: 'number', transform: 'msToSec' },
-          { key: 'registrationOpen', type: 'checkbox' },
-          { key: 'generationServiceEnabled', type: 'checkbox' },
-          { key: 'chatServiceEnabled', type: 'checkbox' },
-          { key: 'paymentEnabled', type: 'checkbox' },
-          { key: 'mockPaymentEnabled', type: 'checkbox' },
-          { key: 'maintenanceNotice', type: 'textarea', full: true }
+          { key: 'jobTimeoutSeconds', cfgKey: 'jobTimeoutMs', type: 'number', transform: 'msToSec' }
         ]
-        document.getElementById('configForm').innerHTML = fields
-          .map((f) => {
+        const serviceFields = [
+          { key: 'registrationOpen' },
+          { key: 'generationServiceEnabled' },
+          { key: 'chatServiceEnabled' },
+          { key: 'paymentEnabled' },
+          { key: 'mockPaymentEnabled', tone: 'warning' }
+        ]
+
+        const renderNumber = (f) => {
             const cfgKey = f.cfgKey || f.key
-            const raw = cfg[f.cfgKey]
+            const raw = cfg[cfgKey]
             const label = maps.CONFIG_LABEL[f.key] || f.key
             const hint = maps.CONFIG_HINT[f.key]
             const hintHtml = hint ? `<span class="field-hint">${esc(hint)}</span>` : ''
-            if (f.type === 'checkbox') {
-              return `<label class="field"><span>${esc(label)}</span>${hintHtml}<input data-cfg="${cfgKey}" type="checkbox" ${raw ? 'checked' : ''} ${canWrite ? '' : 'disabled'} /></label>`
-            }
-            if (f.type === 'textarea') {
-              return `<label class="field" style="grid-column:1/-1"><span>${esc(label)}</span>${hintHtml}<textarea data-cfg="${cfgKey}" ${canWrite ? '' : 'disabled'}>${esc(raw || '')}</textarea></label>`
-            }
             const val = f.transform === 'msToSec' ? Math.round(Number(raw || 0) / 1000) : raw
-            return `<label class="field"><span>${esc(label)}</span>${hintHtml}<input data-cfg="${cfgKey}" data-transform="${f.transform || ''}" type="number" value="${val}" ${canWrite ? '' : 'disabled'} /></label>`
-          })
-          .join('')
+            return `<label class="config-number-field"><span class="config-field-label">${esc(label)}</span>${hintHtml}<input data-cfg="${cfgKey}" data-transform="${f.transform || ''}" type="number" min="0" value="${val ?? ''}" ${canWrite ? '' : 'disabled'} /></label>`
+        }
+
+        const renderSwitch = (f) => {
+          const label = maps.CONFIG_LABEL[f.key] || f.key
+          const hint = maps.CONFIG_HINT[f.key]
+          const checked = Boolean(cfg[f.key])
+          return `<label class="config-switch-row ${f.tone === 'warning' ? 'is-warning' : ''}">
+            <span class="config-switch-copy">
+              <span class="config-switch-title">${esc(label)}</span>
+              ${hint ? `<span class="config-switch-hint">${esc(hint)}</span>` : ''}
+            </span>
+            <span class="switch-control">
+              <input data-cfg="${f.key}" type="checkbox" ${checked ? 'checked' : ''} ${canWrite ? '' : 'disabled'} />
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </span>
+          </label>`
+        }
+
+        document.getElementById('configForm').innerHTML = `
+          <section class="config-section">
+            <div class="config-section-head">
+              <h4>用量与任务</h4>
+              <p>设置不同用户计划的每日额度与生成任务超时时间。</p>
+            </div>
+            <div class="config-number-grid">${usageFields.map(renderNumber).join('')}</div>
+          </section>
+          <section class="config-section">
+            <div class="config-section-head">
+              <h4>服务开关</h4>
+              <p>关闭服务后，客户端对应功能将立即不可用。</p>
+            </div>
+            <div class="config-switch-list">${serviceFields.map(renderSwitch).join('')}</div>
+          </section>
+          <section class="config-section">
+            <div class="config-section-head">
+              <h4>维护公告</h4>
+              <p>${esc(maps.CONFIG_HINT.maintenanceNotice || '')}</p>
+            </div>
+            <label class="config-notice-field">
+              <span class="config-field-label">${esc(maps.CONFIG_LABEL.maintenanceNotice || '维护公告')}</span>
+              <textarea data-cfg="maintenanceNotice" placeholder="例如：系统将在今晚 23:00 进行短暂维护。" ${canWrite ? '' : 'disabled'}>${esc(cfg.maintenanceNotice || '')}</textarea>
+            </label>
+          </section>`
       }
 
       async function loadOverview() {
@@ -739,6 +786,14 @@
           document.querySelectorAll('[data-gen-tab]').forEach((b) => b.classList.toggle('active', b === btn))
           document.getElementById('gen-batches').classList.toggle('active', btn.dataset.genTab === 'batches')
           document.getElementById('gen-jobs').classList.toggle('active', btn.dataset.genTab === 'jobs')
+        })
+      })
+
+      document.querySelectorAll('[data-commerce-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-commerce-tab]').forEach((b) => b.classList.toggle('active', b === btn))
+          document.getElementById('commerce-payments').classList.toggle('active', btn.dataset.commerceTab === 'payments')
+          document.getElementById('commerce-codes').classList.toggle('active', btn.dataset.commerceTab === 'codes')
         })
       })
 

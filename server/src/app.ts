@@ -23,6 +23,24 @@ export function createApp() {
 
   app.get('/health', (c) => c.json({ ok: true, version: 'B1.4.0' }))
 
+  app.get('/auth/callback', (c) => {
+    const token = c.req.query('token') ?? ''
+    const deepLink = `petory://auth/callback?token=${encodeURIComponent(token)}`
+    const safeDeepLink = deepLink.replaceAll('&', '&amp;').replaceAll('"', '&quot;')
+    return c.html(`<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>登录 Petory</title></head>
+<body style="margin:0;background:#fafaf8;color:#262522;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <main style="max-width:440px;margin:15vh auto;padding:32px;text-align:center">
+    <h1 style="font-size:24px">正在打开 Petory</h1>
+    <p style="color:#777;line-height:1.7">如果应用没有自动打开，请点击下面的按钮。</p>
+    <a href="${safeDeepLink}" style="display:inline-block;margin-top:12px;background:#2f6f5e;color:white;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:600">打开 Petory</a>
+  </main>
+  <script>window.location.replace(${JSON.stringify(deepLink)})</script>
+</body>
+</html>`)
+  })
+
   app.route('/api/app', appRoutes)
   app.route('/api/auth', authRoutes)
 

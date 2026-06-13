@@ -22,6 +22,34 @@ body {
     sans-serif;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d1ca transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #d4d1ca;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 /* Electron frameless window: native drag (trackpad-friendly on macOS) */
 .electron-drag {
   -webkit-app-region: drag;

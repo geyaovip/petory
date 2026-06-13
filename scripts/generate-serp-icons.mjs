@@ -10,6 +10,7 @@ import sharp from 'sharp'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const websiteDir = path.join(root, 'website')
+const adminDir = path.join(root, 'server', 'admin', 'public')
 
 const sources = [
   path.join(root, 'brand/generated/icon.png'),
@@ -73,6 +74,12 @@ await sharp(path.join(websiteDir, 'favicon-48.png'))
   .png()
   .toFile(path.join(websiteDir, 'favicon.png'))
 
+fs.mkdirSync(adminDir, { recursive: true })
+for (const name of ['favicon-16.png', 'favicon-32.png', 'favicon-48.png', 'favicon.png']) {
+  await fs.promises.copyFile(path.join(websiteDir, name), path.join(adminDir, name))
+}
+
 console.log('✓ website/favicon.ico (opaque 48px)')
 console.log('✓ website/site-icon-192.png (Organization logo)')
 console.log('✓ website/favicon-*.png (opaque SERP set)')
+console.log('✓ server/admin/public/favicon-*.png (matches website)')

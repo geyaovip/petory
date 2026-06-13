@@ -2,6 +2,7 @@ import type {
   AuthActionResult,
   AuthSession,
   LoginInput,
+  MagicLinkRequestResult,
   RegisterInput
 } from '../../../src/shared/types/auth'
 import type { ServerAuthUser } from '../../../src/shared/types/api'
@@ -121,6 +122,49 @@ export async function remoteLogin(input: LoginInput): Promise<AuthActionResult> 
     return afterAuth(result.user, result.accessToken)
   } catch (error) {
     return failure(error instanceof Error ? error.message : '无法连接后台服务。')
+  }
+}
+
+export async function remoteRequestMagicLink(email: string): Promise<MagicLinkRequestResult> {
+  const emailError = validateEmail(email)
+  if (emailError) return { success: false, message: emailError }
+
+  try {
+    const result = await apiFetch<MagicLinkRequestResult>('/api/auth/magic-link', {
+      method: 'POST',
+      auth: false,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    return result
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : '登录邮件发送失败，请稍后再试。'
+    }
+  }
+}
+
+export async function remoteConsumeMagicLink(token: string): Promise<AuthActionResult> {
+  if (!token.trim()) return failure('登录链接无效。')
+  try {
+    const result = await apiFetch<{
+      success: boolean
+      accessToken?: string
+      user?: ServerAuthUser
+      message?: string
+    }>('/api/auth/callback', {
+      method: 'POST',
+      auth: false,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    })
+    if (!result.success || !result.accessToken || !result.user) {
+      return failure(result.message || '登录链接无效或已过期。')
+    }
+    return afterAuth(result.user, result.accessToken)
+  } catch (error) {
+    return failure(error instanceof Error ? error.message : '登录失败，请重新发送链接。')
   }
 }
 

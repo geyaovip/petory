@@ -526,20 +526,22 @@ MVP **不加载外部字体**，使用系统字体栈保证性能与原生感。
 
 处理规则（`npm run sync:brand`）：
 
-1. **不做**白底抠图、溢色还原、边缘羽化或锯齿修复——源图已是透明 PNG，直接沿用 alpha
-2. app 图标 `trim` 后居中到透明正方形，`contain` 缩放，**禁止 crop**
-3. 透明边距仅按场景配置（`scripts/sync-brand-assets.mjs` → `SCENE_INSET`）；不需要边距的场景 **inset = 1**（铺满画布）
+1. 两张源图的透明通道存在导出空洞；同步脚本只修复猫咪内部白色区域与图标主体，禁止手改派生图
+2. app 图标清理导出白边后居中到正方形，按场景 `contain` 缩放；不裁切猫咪主体
+3. favicon、Dock、Windows 安装图标和 Apple Touch 分别生成，不允许用同一张满画布 PNG 兼任
+4. 方形源图建议至少 **1024×1024**；低于 512px 时同步脚本会警告，因为放大无法真正消除锯齿
 
 **Git 中唯一派生目录：** `brand/generated/`（`npm run sync:brand` 写入，提交此目录即可）
 
 | 场景 | 输出 | 透明边距 (inset) | 说明 |
 |------|------|------------------|------|
-| 官网 / 管理端 / 客户端标签 | `favicon-16/32/48.png` | **1**（无） | 浏览器自行裁圆角，铺满即可 |
-| 官网 / 管理端书签 | `apple-touch-icon.png` | **1**（无） | 与 favicon 一致，满画布 |
-| mac 客户端 Dock（开发运行） | `build/dock-icon.png`（512px） | **0.84** | `loadDockIcon()` 优先加载 |
-| mac 客户端 Dock（备用） | `src/renderer/public/apple-touch-icon.png` | **0.84** | 对齐系统 Dock 视觉尺寸 |
-| macOS 安装包 | `build/icon.icns` | **0.84** | 同 Dock 安全区 |
-| Windows 安装包 | `build/icon.png` | **1**（无） | 系统自行处理圆角 |
+| 客户端窗口 / 任务切换 | `favicon-16/32/48.png` | **0.72 / 0.82** | 透明圆角，小尺寸保留独立安全区 |
+| 官网 / 管理端标签 | `website/favicon*`、`server/admin/public/favicon*` | **0.84** | 不透明蓝底，避免浏览器深浅底色产生黑边或白边 |
+| 官网 / 管理端书签 | `apple-touch-icon.png` | **1**（无） | 强制不透明，由 iOS/macOS 负责外层圆角 |
+| mac 客户端 Dock（开发运行） | `build/dock-icon.png`（512px） | **0.80** | `loadDockIcon()` 优先加载 |
+| mac 客户端 Dock（备用） | `src/renderer/public/apple-touch-icon.png` | **0.80** | 对齐系统 Dock 视觉尺寸 |
+| macOS 安装包 | `build/icon.icns` | **0.80** | 同 Dock 安全区 |
+| Windows 安装包 | `build/icon.png` | **0.88** | 单独生成，不复用满画布归档图 |
 | 归档主图 | `brand/generated/icon.png` | **1**（无） | 仅作派生源，不额外留白 |
 | 导航 wordmark | `logo.png` | — | 横版 logo，非 app icon |
 

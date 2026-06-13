@@ -17,17 +17,14 @@ interface WindowTitleBarProps {
 }
 
 export function WindowTitleBar({ mode }: WindowTitleBarProps): ReactElement {
-  const isMac = window.petory.platform === 'darwin'
   const title = mode === 'loading' ? 'Petory' : (TITLES[mode] ?? 'Petory')
 
   return (
     <div
-      className={`electron-drag flex h-11 shrink-0 items-center border-b border-petory-border/50 bg-petory-bg ${
-        isMac ? 'pl-[76px]' : 'pl-4'
-      } pr-4`}
+      className="electron-drag relative flex h-[52px] shrink-0 items-center justify-center border-b border-petory-border/70 bg-petory-bg px-16"
       title="拖动标题栏移动窗口"
     >
-      <span className="select-none text-[12px] font-medium text-petory-text-secondary">{title}</span>
+      <span className="pointer-events-none select-none truncate text-[12px] font-semibold text-petory-text-secondary">{title}</span>
     </div>
   )
 }

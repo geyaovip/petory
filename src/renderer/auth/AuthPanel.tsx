@@ -3,25 +3,21 @@ import type { AuthState } from '@shared/types/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { LinkButton } from '../components/ui/LinkButton'
-import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { MaintenanceNotice } from '../components/MaintenanceNotice'
 import { PageShell } from '../components/ui/PageShell'
 import { AUTH_COPY } from '@shared/copy/auth'
 
-type AuthTab = 'login' | 'register'
+type LoginMode = 'magic-link' | 'password'
 
 export function AuthPanel(): ReactElement {
-  const [tab, setTab] = useState<AuthTab>('login')
+  const [mode, setMode] = useState<LoginMode>('magic-link')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [displayName, setDisplayName] = useState('')
   const [agreedLegal, setAgreedLegal] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [bootstrap, setBootstrap] = useState<AuthState | null>(null)
-
-  const remote = bootstrap?.useRemoteBackend === true
-  const registrationOpen = bootstrap?.registrationOpen !== false
 
   useEffect(() => {
     void window.petory.auth.refresh().then(setBootstrap).catch(() => {
@@ -31,89 +27,54 @@ export function AuthPanel(): ReactElement {
     return off
   }, [])
 
-  useEffect(() => {
-    if (!registrationOpen && tab === 'register') {
-      setTab('login')
-    }
-  }, [registrationOpen, tab])
-
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault()
     if (!agreedLegal) {
       setError(AUTH_COPY.legalRequired)
       return
     }
-    if (tab === 'register' && !registrationOpen) {
-      setError(AUTH_COPY.registrationDisabled)
-      return
-    }
+
     setError(null)
+    setInfo(null)
     setLoading(true)
     try {
       await window.petory.legal.accept()
-      const result =
-        tab === 'login'
-          ? await window.petory.auth.login({ email, password })
-          : await window.petory.auth.register({
-              email,
-              password,
-              displayName: displayName.trim() || undefined
-            })
-      if (!result.success) {
-        setError(result.message)
+      if (mode === 'magic-link') {
+        const result = await window.petory.auth.requestMagicLink(email)
+        if (result.success) setInfo(result.message || AUTH_COPY.magicLinkSent)
+        else setError(result.message)
+        return
       }
+
+      const result = await window.petory.auth.login({ email, password })
+      if (!result.success) setError(result.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const switchMode = (): void => {
+    setMode((current) => (current === 'magic-link' ? 'password' : 'magic-link'))
+    setError(null)
+    setInfo(null)
   }
 
   return (
     <PageShell className="justify-center bg-petory-surface">
       <div className="mx-auto w-full max-w-[360px]">
         <img src="/logo.png" alt="Petory" className="mb-7 h-12 w-auto" />
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">
-          {tab === 'login' ? '登录 Petory' : '创建 Petory 账号'}
-        </h1>
+        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">登录 Petory</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-petory-text-secondary">
-          {remote ? AUTH_COPY.subtitleRemote : AUTH_COPY.subtitleLocal}
+          {mode === 'magic-link'
+            ? AUTH_COPY.subtitleRemote
+            : '使用已有账号的邮箱和密码登录。'}
         </p>
 
         {bootstrap?.maintenanceNotice ? (
           <MaintenanceNotice className="mt-4" message={bootstrap.maintenanceNotice} />
         ) : null}
 
-        <SegmentedControl
-          className="mt-7"
-          value={tab}
-          options={[
-            { value: 'login', label: '登录' },
-            { value: 'register', label: '注册', disabled: !registrationOpen }
-          ]}
-          onChange={(next) => {
-            setTab(next)
-            setError(null)
-          }}
-        />
-
-        {!registrationOpen && remote ? (
-          <p className="mt-2 text-center text-[11px] text-petory-text-tertiary">
-            {AUTH_COPY.registrationClosed}
-          </p>
-        ) : null}
-
-        <form className="mt-7 space-y-4" onSubmit={(e) => void submit(e)}>
-          {tab === 'register' ? (
-            <label className="block text-[13px] font-medium text-petory-text-secondary">
-              {AUTH_COPY.displayNameLabel}
-              <Input
-                className="mt-2 bg-petory-surface"
-                placeholder={AUTH_COPY.displayNamePlaceholder}
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-            </label>
-          ) : null}
-
+        <form className="mt-7 space-y-4" onSubmit={(event) => void submit(event)}>
           <label className="block text-[13px] font-medium text-petory-text-secondary">
             {AUTH_COPY.emailLabel}
             <Input
@@ -121,44 +82,63 @@ export function AuthPanel(): ReactElement {
               className="mt-2 bg-petory-surface"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value)
+                setError(null)
+                setInfo(null)
+              }}
               required
             />
           </label>
 
-          <label className="block text-[13px] font-medium text-petory-text-secondary">
-            {AUTH_COPY.passwordLabel}
-            <Input
-              type="password"
-              className="mt-2 bg-petory-surface"
-              placeholder={AUTH_COPY.passwordPlaceholder}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </label>
+          {mode === 'password' ? (
+            <label className="block text-[13px] font-medium text-petory-text-secondary">
+              {AUTH_COPY.passwordLabel}
+              <Input
+                type="password"
+                className="mt-2 bg-petory-surface"
+                placeholder={AUTH_COPY.passwordPlaceholder}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                minLength={6}
+              />
+            </label>
+          ) : null}
 
           {error ? (
-            <p
-              className="rounded-lg bg-petory-error-soft px-3 py-2 text-[12px] text-petory-error"
-              role="alert"
-            >
+            <p className="rounded-lg bg-petory-error-soft px-3 py-2 text-[12px] text-petory-error" role="alert">
               {error}
             </p>
           ) : null}
 
+          {info ? (
+            <p className="rounded-lg bg-petory-primary-soft px-3 py-2 text-[12px] leading-relaxed text-petory-primary" role="status">
+              {info}
+            </p>
+          ) : null}
+
           <Button fullWidth disabled={loading} type="submit">
-            {loading ? AUTH_COPY.loading : tab === 'login' ? AUTH_COPY.login : AUTH_COPY.register}
+            {loading
+              ? AUTH_COPY.loading
+              : mode === 'magic-link'
+                ? AUTH_COPY.sendMagicLink
+                : AUTH_COPY.login}
           </Button>
         </form>
 
-        <label className="mt-4 flex items-start gap-2 text-[12px] leading-relaxed text-petory-text-secondary">
+        <div className="mt-3 text-center">
+          <LinkButton onClick={switchMode}>
+            {mode === 'magic-link' ? AUTH_COPY.passwordLogin : AUTH_COPY.magicLinkLogin}
+          </LinkButton>
+        </div>
+
+        <label className="mt-5 flex items-start gap-2 text-[12px] leading-relaxed text-petory-text-secondary">
           <input
             type="checkbox"
             className="mt-0.5 h-4 w-4 shrink-0 accent-petory-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2"
             checked={agreedLegal}
-            onChange={() => setAgreedLegal((v) => !v)}
+            onChange={() => setAgreedLegal((value) => !value)}
           />
           <span>
             {AUTH_COPY.legalPrefix}
@@ -171,6 +151,12 @@ export function AuthPanel(): ReactElement {
             </LinkButton>
           </span>
         </label>
+
+        {mode === 'magic-link' ? (
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-petory-text-tertiary">
+            首次使用该邮箱时会自动创建免费账号，无需单独注册。
+          </p>
+        ) : null}
       </div>
     </PageShell>
   )

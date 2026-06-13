@@ -41,6 +41,7 @@ git clone git@github.com:geyaovip/petory.git /home/ubuntu/apps/petory/current
 cd /home/ubuntu/apps/petory/current/deploy/server
 cp env.example .env
 # Fill production secrets in .env.
+# Magic Link login requires RESEND_API_KEY and a verified MAIL_FROM domain.
 docker compose up -d --build
 docker compose ps
 curl http://127.0.0.1:8787/health

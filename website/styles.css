@@ -1413,7 +1413,7 @@ a {
   width: 250px;
   height: 255px;
   overflow: hidden;
-  background: url("assets/logo.png?v=9") left center / auto 255px no-repeat;
+  background: url("assets/logo.png?v=10") left center / auto 255px no-repeat;
   filter: drop-shadow(0 24px 20px rgba(59, 45, 35, 0.16));
   animation: pet-arrive 700ms 180ms both cubic-bezier(0.2, 0.8, 0.2, 1);
 }

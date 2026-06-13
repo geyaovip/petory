@@ -18,14 +18,14 @@ export function GuidePanel(): ReactElement {
 
   return (
     <PanelFrame title="功能指南" subtitle={GUIDE_COPY.stepLabel(step + 1, steps.length)} onClose={() => void finish()}>
-      <div className="flex min-h-full flex-col px-8 py-6">
+      <div className="flex min-h-full flex-col px-7 py-6">
       <div className="flex items-center justify-end">
         <TextButton onClick={() => void finish()}>{GUIDE_COPY.skip}</TextButton>
       </div>
 
-      <div className="mt-2 flex flex-1 flex-col items-center">
+      <div className="mt-2 flex flex-1 flex-col items-center rounded-3xl border border-petory-border bg-petory-surface px-6 pb-6">
         <GuideIllustration stepId={current.id} />
-        <h1 className="mt-6 w-full text-[22px] font-semibold">{current.title}</h1>
+        <h2 className="mt-6 w-full text-[21px] font-semibold">{current.title}</h2>
         <p className="mt-3 w-full text-[14px] leading-relaxed text-petory-text-secondary">{current.body}</p>
       </div>
 

@@ -27,61 +27,67 @@ export function OnboardingFlow(): ReactElement {
   const [selectedStyle, setSelectedStyle] = useState<PetStyleType>('petory')
   const [lastUsedStyle, setLastUsedStyle] = useState<PetStyleType>('petory')
   const [isSamplePet, setIsSamplePet] = useState(false)
-  const [errorCode, setErrorCode] = useState<OnboardingErrorCode>('generation_failed')
+  const [errorCode, setErrorCode] =
+    useState<OnboardingErrorCode>('generation_failed')
   const [errorMessage, setErrorMessage] = useState('')
   const [installingSample, setInstallingSample] = useState(false)
 
-  const applyIntent = useCallback(async (intent: OnboardingIntent | null): Promise<void> => {
-    const [hasActive, activePet, settings] = await Promise.all([
-      window.petory.pet.hasActive(),
-      window.petory.pet.getActive(),
-      window.petory.settings.get()
-    ])
+  const applyIntent = useCallback(
+    async (intent: OnboardingIntent | null): Promise<void> => {
+      const [hasActive, activePet, settings] = await Promise.all([
+        window.petory.pet.hasActive(),
+        window.petory.pet.getActive(),
+        window.petory.settings.get()
+      ])
 
-    const rememberedStyle = settings.lastSelectedStyle
-    setLastUsedStyle(rememberedStyle)
-    setReturnToPets(intent?.returnTo === 'pets')
+      const rememberedStyle = settings.lastSelectedStyle
+      setLastUsedStyle(rememberedStyle)
+      setReturnToPets(intent?.returnTo === 'pets')
 
-    if (intent?.mode === 'restyle') {
-      const pets = await window.petory.pets.list()
-      const pet = pets.find((item) => item.id === intent.petId)
-      if (!pet || pet.isSample) {
-        setSelectedStyle(rememberedStyle)
-        setReplaceMode(hasActive)
-        setStep(hasActive ? 'upload' : 'welcome')
+      if (intent?.mode === 'restyle') {
+        const pets = await window.petory.pets.list()
+        const pet = pets.find((item) => item.id === intent.petId)
+        if (!pet || pet.isSample) {
+          setSelectedStyle(rememberedStyle)
+          setReplaceMode(hasActive)
+          setStep(hasActive ? 'upload' : 'welcome')
+          return
+        }
+
+        setReplaceMode(true)
+        setPetId(pet.id)
+        setIsSamplePet(false)
+        setSelectedStyle(pet.styleType ?? rememberedStyle)
+        setStep(pet.imagePetPath ? 'result' : 'style')
         return
       }
 
-      setReplaceMode(true)
-      setPetId(pet.id)
-      setIsSamplePet(false)
-      setSelectedStyle(pet.styleType ?? rememberedStyle)
-      setStep(pet.imagePetPath ? 'result' : 'style')
-      return
-    }
+      if (intent?.mode === 'new') {
+        setReplaceMode(false)
+        setPetId(null)
+        setIsSamplePet(false)
+        setSelectedStyle(rememberedStyle)
+        setStep('upload')
+        return
+      }
 
-    if (intent?.mode === 'new') {
+      if (intent?.mode === 'replace' || hasActive) {
+        setReplaceMode(true)
+        setPetId(null)
+        setIsSamplePet(false)
+        setSelectedStyle(
+          resolveDefaultStyle(rememberedStyle, activePet?.styleType)
+        )
+        setStep('upload')
+        return
+      }
+
       setReplaceMode(false)
-      setPetId(null)
-      setIsSamplePet(false)
       setSelectedStyle(rememberedStyle)
-      setStep('upload')
-      return
-    }
-
-    if (intent?.mode === 'replace' || hasActive) {
-      setReplaceMode(true)
-      setPetId(null)
-      setIsSamplePet(false)
-      setSelectedStyle(resolveDefaultStyle(rememberedStyle, activePet?.styleType))
-      setStep('upload')
-      return
-    }
-
-    setReplaceMode(false)
-    setSelectedStyle(rememberedStyle)
-    setStep('welcome')
-  }, [])
+      setStep('welcome')
+    },
+    []
+  )
 
   const returnToPrevious = useCallback((): void => {
     if (returnToPets) window.petory.pets.open()
@@ -156,13 +162,6 @@ export function OnboardingFlow(): ReactElement {
     return (
       <UploadPage
         replaceMode={replaceMode}
-        onBack={() => {
-          if (replaceMode || returnToPets) {
-            returnToPrevious()
-            return
-          }
-          setStep('welcome')
-        }}
         onUploaded={(id) => {
           void window.petory.settings.get().then((settings) => {
             setPetId(id)

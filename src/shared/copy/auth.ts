@@ -1,6 +1,9 @@
 export const AUTH_COPY = {
-  subtitleRemote: '登录后使用，额度与生成记录由云端同步。',
-  subtitleLocal: '注册或登录后即可开始创建桌宠。',
+  subtitleRemote: '输入邮箱，我们会发送一个一次性登录链接。',
+  magicLinkSent: '登录链接已发送，请查收邮件。链接 15 分钟内有效。',
+  sendMagicLink: '发送一次性登录链接',
+  passwordLogin: '使用密码登录',
+  magicLinkLogin: '使用邮箱链接登录',
   registrationClosed: '当前暂未开放新用户注册。',
   legalRequired: '请先阅读并同意用户协议与隐私政策。',
   registrationDisabled: '当前暂未开放注册。',

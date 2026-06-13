@@ -7,3 +7,8 @@ export interface PomodoroState {
   focusDurationMin: number
   breakDurationMin: number
 }
+
+export interface PomodoroStartInput {
+  focusDurationMin: number
+  breakDurationMin: number
+}

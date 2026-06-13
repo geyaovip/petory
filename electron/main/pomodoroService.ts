@@ -1,9 +1,9 @@
-import type { PomodoroPhase, PomodoroState } from '../../src/shared/types/pomodoro'
+import type { PomodoroPhase, PomodoroStartInput, PomodoroState } from '../../src/shared/types/pomodoro'
 import { addFocusSession } from './focusSessionStore'
 import { rewardPomodoro } from './growthService'
 import { notifyBubble, setPetVisualState } from './petStateService'
 import { getActivePet } from './petStore'
-import { loadUserSettings } from './settingsStore'
+import { loadUserSettings, patchUserSettings } from './settingsStore'
 import { incrementTodayFocus } from './statsStore'
 import { resetSedentaryTimer } from './sedentaryService'
 import { touchActivity } from './sleepService'
@@ -96,7 +96,6 @@ function onPhaseComplete(): void {
       state.remainingMs = settings.breakDuration * 60 * 1000
       state.isPaused = false
       state.focusStartedAt = null
-      setPetVisualState('idle')
       broadcast()
       return
     }
@@ -133,8 +132,13 @@ export function getPomodoroState(): PomodoroState {
   }
 }
 
-export function startPomodoro(): PomodoroState {
-  const settings = getSettings()
+export function startPomodoro(input?: PomodoroStartInput): PomodoroState {
+  const settings = input
+    ? patchUserSettings({
+        focusDuration: Math.max(5, Math.min(120, input.focusDurationMin)),
+        breakDuration: Math.max(1, Math.min(30, input.breakDurationMin))
+      })
+    : getSettings()
   state = {
     phase: 'focus',
     remainingMs: settings.focusDuration * 60 * 1000,

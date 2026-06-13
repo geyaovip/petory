@@ -47,6 +47,8 @@ npm run dev
 |------|------|------|
 | POST | `/api/auth/register` | 注册 `{ email, password, displayName? }` |
 | POST | `/api/auth/login` | 登录 |
+| POST | `/api/auth/magic-link` | 发送一次性登录邮件 `{ email }` |
+| POST | `/api/auth/callback` | 使用一次性令牌换取登录态 `{ token }` |
 | GET | `/api/me` | 当前用户 + 额度（Bearer token） |
 | POST | `/api/devices/register` | 登记设备 |
 | GET | `/api/generation/quota` | 生成额度 |

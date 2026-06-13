@@ -1,21 +1,70 @@
 import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
-import sharp from 'sharp'
 import { getPoseFileName, PET_POSE_ORDER } from '../../src/shared/poses'
 import type { PetPoseAssets } from '../../src/shared/types/pet'
 import { canCreatePet } from './auth/entitlementService'
-import { createDraftPet, ensurePetDirs, updatePet } from './petStore'
+import { createDraftPet, ensurePetDirs, loadStore, saveStore, updatePet } from './petStore'
 
 export type InstallSampleResult =
   | { success: true; petId: string }
   | { success: false; message: string }
 
-function getSampleSvgPath(): string {
+function getSampleRoot(): string {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'sample', 'pet.svg')
+    return path.join(process.resourcesPath, 'sample')
   }
-  return path.join(app.getAppPath(), 'resources/sample/pet.svg')
+  return path.join(app.getAppPath(), 'resources/sample')
+}
+
+function copySampleAssets(petId: string): { petPngPath: string; posePaths: PetPoseAssets } {
+  const sampleRoot = getSampleRoot()
+  const sampleIdle = path.join(sampleRoot, 'poses', 'idle.png')
+  const { sourceDir, generatedDir } = ensurePetDirs(petId)
+  const sourceCopy = path.join(sourceDir, 'sample.png')
+  const petPngPath = path.join(generatedDir, 'pet.png')
+
+  fs.copyFileSync(sampleIdle, sourceCopy)
+  fs.copyFileSync(sampleIdle, petPngPath)
+
+  const posePaths: PetPoseAssets = {}
+  for (const pose of PET_POSE_ORDER) {
+    const posePath = path.join(generatedDir, getPoseFileName(pose))
+    fs.copyFileSync(path.join(sampleRoot, 'poses', `${pose}.png`), posePath)
+    posePaths[pose] = posePath
+  }
+
+  return { petPngPath, posePaths }
+}
+
+export function refreshInstalledSamplePets(): void {
+  const sampleIdle = path.join(getSampleRoot(), 'poses', 'idle.png')
+  if (!fs.existsSync(sampleIdle)) return
+
+  const store = loadStore()
+  let pathsChanged = false
+
+  store.pets = store.pets.map((pet) => {
+    if (!pet.isSample) return pet
+
+    const { petPngPath, posePaths } = copySampleAssets(pet.id)
+    const hasCurrentPaths =
+      pet.imageMinimaxRawPath === petPngPath &&
+      pet.imagePetPath === petPngPath &&
+      PET_POSE_ORDER.every((pose) => pet.posePaths?.[pose] === posePaths[pose])
+
+    if (hasCurrentPaths) return pet
+
+    pathsChanged = true
+    return {
+      ...pet,
+      imageMinimaxRawPath: petPngPath,
+      imagePetPath: petPngPath,
+      posePaths
+    }
+  })
+
+  if (pathsChanged) saveStore(store)
 }
 
 export async function installSamplePet(): Promise<InstallSampleResult> {
@@ -24,32 +73,17 @@ export async function installSamplePet(): Promise<InstallSampleResult> {
     return { success: false, message: quota.message }
   }
 
-  const sampleSvg = getSampleSvgPath()
-  if (!fs.existsSync(sampleSvg)) {
+  const sampleRoot = getSampleRoot()
+  const sampleIdle = path.join(sampleRoot, 'poses', 'idle.png')
+  if (!fs.existsSync(sampleIdle)) {
     return { success: false, message: '示例宠物资源缺失，请重新安装应用。' }
   }
 
   try {
     const pet = createDraftPet({ imageOriginalPath: '', imageCompressedPath: '' })
-    const { sourceDir, generatedDir } = ensurePetDirs(pet.id)
-    const sourceCopy = path.join(sourceDir, 'sample.svg')
-    const petPngPath = path.join(generatedDir, 'pet.png')
-
-    fs.copyFileSync(sampleSvg, sourceCopy)
-    await sharp(sampleSvg)
-      .resize(512, 640, {
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      })
-      .png()
-      .toFile(petPngPath)
-
-    const posePaths: PetPoseAssets = {}
-    for (const pose of PET_POSE_ORDER) {
-      const posePath = path.join(generatedDir, getPoseFileName(pose))
-      fs.copyFileSync(petPngPath, posePath)
-      posePaths[pose] = posePath
-    }
+    const { sourceDir } = ensurePetDirs(pet.id)
+    const sourceCopy = path.join(sourceDir, 'sample.png')
+    const { petPngPath, posePaths } = copySampleAssets(pet.id)
 
     updatePet(pet.id, {
       imageOriginalPath: sourceCopy,

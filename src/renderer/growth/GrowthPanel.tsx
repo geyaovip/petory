@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
 import type { GrowthStats, InteractionLog } from '@shared/types/growth'
 import { playLevelUp } from '../utils/petSound'
-import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PanelLoading } from '../components/ui/PanelLoading'
 import { PanelFrame } from '../components/ui/PanelFrame'
@@ -62,8 +61,8 @@ export function GrowthPanel(): ReactElement {
 
   return (
     <PanelFrame title="成长" subtitle="每一次陪伴都会留下记录" onClose={() => window.petory.growth.close()}>
-      <div className="px-6 py-6">
-      <div className="border-b border-petory-border pb-6">
+      <div className="space-y-4 px-5 py-5">
+      <div className="rounded-2xl border border-petory-border bg-petory-surface p-5">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[20px] font-semibold">{stats.name}</p>
@@ -75,7 +74,7 @@ export function GrowthPanel(): ReactElement {
             Lv.{stats.level}
           </span>
         </div>
-        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-petory-track">
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-petory-track">
           <div
             className="h-full rounded-full bg-petory-primary"
             style={{ width: `${stats.expPercent}%` }}
@@ -88,8 +87,8 @@ export function GrowthPanel(): ReactElement {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 divide-x divide-petory-border border-b border-petory-border py-6">
-        <div className="px-4 first:pl-0">
+      <div className="grid grid-cols-3 divide-x divide-petory-border rounded-2xl border border-petory-border bg-petory-surface py-5">
+        <div className="px-4">
           <p className="text-[12px] text-petory-text-tertiary">今日专注</p>
           <p className="mt-1 text-[20px] font-semibold">{stats.todayFocusCount}</p>
         </div>
@@ -103,7 +102,7 @@ export function GrowthPanel(): ReactElement {
         </div>
       </div>
 
-      <section className="border-b border-petory-border py-6">
+      <section className="rounded-2xl border border-petory-border bg-petory-surface p-5">
         <h2 className="text-[13px] font-semibold">小成就</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {stats.badges.map((badge) => (
@@ -123,7 +122,7 @@ export function GrowthPanel(): ReactElement {
       </section>
 
       {stats.recentInteractions.length > 0 ? (
-        <section className="py-6">
+        <section className="rounded-2xl border border-petory-border bg-petory-surface p-5">
           <h2 className="text-[13px] font-semibold">最近互动</h2>
           <ul className="mt-3 divide-y divide-petory-border">
             {stats.recentInteractions.map((item) => (
@@ -146,14 +145,6 @@ export function GrowthPanel(): ReactElement {
         </p>
       )}
 
-      <Button
-        className="mt-6"
-        variant="secondary"
-        fullWidth
-        onClick={() => window.petory.settings.open()}
-      >
-        打开设置
-      </Button>
       </div>
     </PanelFrame>
   )

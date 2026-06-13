@@ -32,13 +32,15 @@ const sources = {
 
 /** Transparent margin for macOS Dock / installer only (layout, not edge cleanup). */
 const SCENE_INSET = {
-  favicon: 1,
+  favicon: 0.82,
   webAppleTouch: 1,
-  macDockRuntime: 0.84,
-  macInstaller: 0.84,
-  winInstaller: 1,
+  macDockRuntime: 0.8,
+  macInstaller: 0.8,
+  winInstaller: 0.88,
   brandArchive: 1
 }
+
+const WEB_ICON_BG = { r: 61, g: 127, b: 214, alpha: 255 }
 
 function assertSources() {
   for (const file of Object.values(sources)) {
@@ -122,14 +124,17 @@ function markExteriorNeighbors(exterior, width, height, depth = 2) {
   return near
 }
 
-/** Wordmark: fill interior RGB-with-zero-alpha holes only. */
+/** Wordmark: repair the mascot's white fur without filling letter counters. */
 function repairWordmarkAlpha(data, width, height) {
   const channels = 4
   const size = width * height
   const exterior = floodExteriorMask(data, width, height, 20)
+  const mascotRight = Math.floor(width * 0.33)
 
   for (let p = 0; p < size; p++) {
     if (exterior[p]) continue
+    const x = p % width
+    if (x > mascotRight) continue
     const i = p * channels
     if (data[i + 3] >= 128) continue
     if (Math.max(data[i], data[i + 1], data[i + 2]) > 10) data[i + 3] = 255
@@ -139,101 +144,78 @@ function repairWordmarkAlpha(data, width, height) {
 function pixelColorFlags(r, g, b) {
   const light = (r + g + b) / 3
   const sat = Math.max(r, g, b) - Math.min(r, g, b)
-  return {
-    light,
-    sat,
-    isOrange: r > g + 8 && r > b + 15 && sat > 28,
-    isDeepBlue: b >= r + 12 && b >= g + 4 && light < 185 && sat > 35
-  }
+  return { light, sat }
 }
 
-/** Cat white fur sits against orange — keep; squircle pale halo against blue — strip. */
-function hasOpaqueFurNeighbor(data, width, height, channels, p) {
-  const x = p % width
-  const y = (p - x) / width
-  const offsets = [
-    [x - 1, y],
-    [x + 1, y],
-    [x, y - 1],
-    [x, y + 1]
-  ]
-
-  for (const [nx, ny] of offsets) {
-    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
-    const ni = (ny * width + nx) * channels
-    if (data[ni + 3] < 200) continue
-    const { isOrange } = pixelColorFlags(data[ni], data[ni + 1], data[ni + 2])
-    if (isOrange) return true
-  }
-
-  return false
-}
-
-/**
- * App icon: fill design-export holes (white cat face with alpha=0),
- * strip squircle pale fringe on Dock, without hollowing the cat.
- */
+/** App icon: keep transparency outside the tile and make its interior solid. */
 function processAppIconAlpha(data, width, height) {
   const channels = 4
   const size = width * height
-  const exterior = floodExteriorMask(data, width, height, 24)
-  const nearExterior = markExteriorNeighbors(exterior, width, height, 8)
+  const edgeBandX = Math.floor(width * 0.18)
+  const edgeBandY = Math.floor(height * 0.18)
 
+  // Remove the pale export shadow/fringe before closing the solid icon tile.
   for (let p = 0; p < size; p++) {
+    const x = p % width
+    const y = (p - x) / width
+    const nearCanvasEdge =
+      x < edgeBandX || x >= width - edgeBandX || y < edgeBandY || y >= height - edgeBandY
+    if (!nearCanvasEdge) continue
+
     const i = p * channels
-    const a = data[i + 3]
-
-    if (exterior[p]) {
-      if (a > 0) {
-        data[i] = 0
-        data[i + 1] = 0
-        data[i + 2] = 0
-        data[i + 3] = 0
-      }
-      continue
+    const { light, sat } = pixelColorFlags(data[i], data[i + 1], data[i + 2])
+    if (light >= 165 && sat < 62) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
     }
-
-    const r = data[i]
-    const g = data[i + 1]
-    const b = data[i + 2]
-
-    // Design export: RGB painted but alpha fully zero (cat white face/chest).
-    if (a < 5 && Math.max(r, g, b) > 10) {
-      data[i + 3] = 255
-      continue
-    }
-
-    if (nearExterior[p]) continue
-    if (a >= 128) continue
-    const { light, sat } = pixelColorFlags(r, g, b)
-    // Resize fringe only: semi-transparent pale halos, not hidden interior holes.
-    if (a > 0 && light >= 145 && sat < 95) continue
-    if (Math.max(r, g, b) > 10) data[i + 3] = 255
   }
 
+  const exterior = floodExteriorMask(data, width, height, 128)
+  const nearExterior = markExteriorNeighbors(exterior, width, height, 6)
+
   for (let p = 0; p < size; p++) {
-    if (exterior[p] || !nearExterior[p]) continue
-
     const i = p * channels
-    const r = data[i]
-    const g = data[i + 1]
-    const b = data[i + 2]
-    const a = data[i + 3]
-    if (a === 0) continue
+    if (exterior[p]) {
+      data[i] = 0
+      data[i + 1] = 0
+      data[i + 2] = 0
+      data[i + 3] = 0
+      continue
+    }
 
-    const { light, sat, isOrange, isDeepBlue } = pixelColorFlags(r, g, b)
-    if (isOrange || isDeepBlue) continue
-
-    const neutralPale = light >= 175 && sat < 58
-    const softFringe = a < 235 && light >= 118 && sat < 100
-    const squircleHalo =
-      (neutralPale || softFringe || a < 48) && !hasOpaqueFurNeighbor(data, width, height, channels, p)
-    if (!squircleHalo) continue
-
-    data[i] = 0
-    data[i + 1] = 0
-    data[i + 2] = 0
-    data[i + 3] = 0
+    if (nearExterior[p]) {
+      const { light, sat } = pixelColorFlags(data[i], data[i + 1], data[i + 2])
+      if (light >= 170 && sat < 100) {
+        const x = p % width
+        const y = (p - x) / width
+        let replacement = null
+        for (let radius = 1; radius <= 8 && !replacement; radius++) {
+          for (let dy = -radius; dy <= radius && !replacement; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+              const nx = x + dx
+              const ny = y + dy
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
+              const ni = (ny * width + nx) * channels
+              const nr = data[ni]
+              const ng = data[ni + 1]
+              const nb = data[ni + 2]
+              if (data[ni + 3] >= 128 && nb > nr + 35 && nb > ng + 25) {
+                replacement = [nr, ng, nb]
+                break
+              }
+            }
+          }
+        }
+        if (replacement) {
+          data[i] = replacement[0]
+          data[i + 1] = replacement[1]
+          data[i + 2] = replacement[2]
+        }
+      }
+    }
+    data[i + 3] = 255
   }
 }
 
@@ -266,14 +248,66 @@ async function writeWordmark(fileName, toPath) {
 async function squaredAppIcon(source) {
   const trimmed = await sharp(source).trim().png().toBuffer()
   const meta = await sharp(trimmed).metadata()
-  const side = Math.max(meta.width ?? 0, meta.height ?? 0)
-  return sharp(trimmed)
+  const width = meta.width ?? 0
+  const height = meta.height ?? 0
+  const edgeCrop = Math.max(1, Math.round(Math.min(width, height) * 0.01))
+  const cleaned = await sharp(trimmed)
+    .extract({
+      left: edgeCrop,
+      top: edgeCrop,
+      width: width - edgeCrop * 2,
+      height: height - edgeCrop * 2
+    })
+    .png()
+    .toBuffer()
+  const cleanedMeta = await sharp(cleaned).metadata()
+  const side = Math.max(cleanedMeta.width ?? 0, cleanedMeta.height ?? 0)
+  return sharp(cleaned)
     .resize(side, side, {
       fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 }
     })
     .png()
     .toBuffer()
+}
+
+function repairResizeFringe(data, width, height) {
+  const channels = 4
+  const exterior = floodExteriorMask(data, width, height, 8)
+  const nearExterior = markExteriorNeighbors(exterior, width, height, 3)
+
+  for (let p = 0; p < width * height; p++) {
+    if (!nearExterior[p] || exterior[p]) continue
+    const i = p * channels
+    const alpha = data[i + 3]
+    if (alpha === 0 || alpha >= 250) continue
+
+    const { light, sat } = pixelColorFlags(data[i], data[i + 1], data[i + 2])
+    if (light < 150 || sat >= 75) continue
+
+    const x = p % width
+    const y = (p - x) / width
+    let replacement = null
+    for (let radius = 1; radius <= 4 && !replacement; radius++) {
+      for (let dy = -radius; dy <= radius && !replacement; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx
+          const ny = y + dy
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
+          const ni = (ny * width + nx) * channels
+          if (data[ni + 3] < 220) continue
+          const nr = data[ni]
+          const ng = data[ni + 1]
+          const nb = data[ni + 2]
+          if (nb > nr + 35 && nb > ng + 25) replacement = [nr, ng, nb]
+        }
+      }
+    }
+    if (!replacement) continue
+    data[i] = replacement[0]
+    data[i + 1] = replacement[1]
+    data[i + 2] = replacement[2]
+  }
 }
 
 async function writeAppIcon(source, dest, size, { inset = 1 } = {}) {
@@ -299,7 +333,7 @@ async function writeAppIcon(source, dest, size, { inset = 1 } = {}) {
     .raw()
     .toBuffer({ resolveWithObject: true })
 
-  processAppIconAlpha(data, info.width, info.height)
+  repairResizeFringe(data, info.width, info.height)
 
   fs.mkdirSync(path.dirname(dest), { recursive: true })
   await sharp(data, {
@@ -309,15 +343,36 @@ async function writeAppIcon(source, dest, size, { inset = 1 } = {}) {
     .toFile(dest)
 }
 
+async function writeOpaqueAppIcon(source, dest, size, { inset = 1 } = {}) {
+  const transparent = await sharp({
+    create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
+  })
+    .png()
+    .toBuffer()
+  const rendered = path.join(path.dirname(dest), `.${path.basename(dest)}.transparent.png`)
+  await writeAppIcon(source, rendered, size, { inset })
+  const icon = await sharp(rendered).png().toBuffer()
+  fs.rmSync(rendered, { force: true })
+
+  fs.mkdirSync(path.dirname(dest), { recursive: true })
+  await sharp(transparent)
+    .composite([{ input: icon }])
+    .flatten({ background: WEB_ICON_BG })
+    .png()
+    .toFile(dest)
+}
+
 async function writeFaviconSet(source, outDir) {
   fs.mkdirSync(outDir, { recursive: true })
   for (const size of [16, 32, 48]) {
     const dest = path.join(outDir, `favicon-${size}.png`)
-    await writeAppIcon(source, dest, size, { inset: SCENE_INSET.favicon })
+    await writeAppIcon(source, dest, size, {
+      inset: size === 16 ? 0.72 : SCENE_INSET.favicon
+    })
     console.log(`✓ ${path.relative(root, dest)}`)
   }
   const appleTouch = path.join(outDir, 'apple-touch-icon.png')
-  await writeAppIcon(source, appleTouch, 180, { inset: SCENE_INSET.webAppleTouch })
+  await writeOpaqueAppIcon(source, appleTouch, 180, { inset: SCENE_INSET.webAppleTouch })
   console.log(`✓ ${path.relative(root, appleTouch)}`)
   await fs.promises.copyFile(path.join(outDir, 'favicon-32.png'), path.join(outDir, 'favicon.png'))
   console.log(`✓ ${path.relative(root, path.join(outDir, 'favicon.png'))}`)
@@ -384,7 +439,10 @@ for (const size of [16, 32, 48]) {
   await mirrorFile(name, [...webFaviconMirrors(name), ...rendererPublicMirrors(name)])
 }
 await mirrorFile('favicon.png', [...rendererPublicMirrors('favicon.png'), ...webFaviconMirrors('favicon.png')])
-await mirrorFile('apple-touch-icon.png', webFaviconMirrors('apple-touch-icon.png'))
+await mirrorFile('apple-touch-icon.png', [
+  ...webFaviconMirrors('apple-touch-icon.png'),
+  'website/apple-touch-icon.png'
+])
 
 await writeAppIcon(
   appIconSquared,
@@ -398,7 +456,9 @@ const dockIconPng = path.join(brandDir, 'dock-icon.png')
 await writeAppIcon(appIconSquared, dockIconPng, 512, { inset: SCENE_INSET.macDockRuntime })
 console.log(`✓ ${path.relative(root, dockIconPng)}`)
 
-await mirrorFile('icon.png', ['build/icon.png'])
+await writeAppIcon(appIconSquared, path.join(root, 'build/icon.png'), 1024, {
+  inset: SCENE_INSET.winInstaller
+})
 await mirrorFile('dock-icon.png', ['build/dock-icon.png'])
 if (fs.existsSync(iconIcns)) {
   await mirrorFile('icon.icns', ['build/icon.icns'])
@@ -412,10 +472,17 @@ if (!verification.ok) {
   for (const err of verification.errors) console.error(`  - ${err}`)
   process.exit(1)
 }
+for (const warning of verification.warnings) console.warn(`⚠ ${warning}`)
 console.log('✓ Brand assets verified (cat face + Dock edges)')
 
 try {
   execSync('node scripts/generate-og-share.mjs', { cwd: root, stdio: 'inherit' })
 } catch {
   console.warn('⚠ og-share.png generation skipped')
+}
+
+try {
+  execSync('node scripts/generate-serp-icons.mjs', { cwd: root, stdio: 'inherit' })
+} catch {
+  console.warn('⚠ website/admin favicon generation skipped')
 }

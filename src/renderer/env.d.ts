@@ -4,11 +4,12 @@ import type {
   AuthState,
   PoseCompletionSummary,
   LoginInput,
+  MagicLinkRequestResult,
   RegisterInput
 } from '@shared/types/auth'
 import type { ChatMessage, ChatSettings, SendChatResponse } from '@shared/types/chat'
 import type { BubblePayload, GrowthStats, PetVisualState } from '@shared/types/growth'
-import type { PomodoroState } from '@shared/types/pomodoro'
+import type { PomodoroStartInput, PomodoroState } from '@shared/types/pomodoro'
 import type { UserSettings } from '@shared/types/settings'
 import type { LegalAcceptance } from '@shared/types/legal'
 import type {
@@ -38,15 +39,7 @@ export interface PetoryAPI {
   app: {
     getPetId: () => Promise<string | null>
     getMode: () => Promise<
-      | 'auth'
-      | 'onboarding'
-      | 'pet'
-      | 'chat'
-      | 'pomodoro'
-      | 'growth'
-      | 'settings'
-      | 'pets'
-      | 'guide'
+      'auth' | 'onboarding' | 'pet' | 'chat' | 'pomodoro' | 'growth' | 'settings' | 'pets' | 'guide'
     >
     quit: () => void
     getVersion: () => Promise<string>
@@ -72,10 +65,9 @@ export interface PetoryAPI {
     hasActive: () => Promise<boolean>
     getActive: () => Promise<Pet | null>
     getActiveImage: () => Promise<string | null>
-    upload: (payload: UploadPayload) => Promise<
-      | { success: true; petId: string }
-      | { success: false; code: string; message: string }
-    >
+    upload: (
+      payload: UploadPayload
+    ) => Promise<{ success: true; petId: string } | { success: false; code: string; message: string }>
     generate: (petId: string, styleType?: PetStyleType) => Promise<PetIpcResult>
     getStyleCatalog: () => Promise<StyleCatalogItem[]>
     setStyle: (
@@ -84,9 +76,7 @@ export interface PetoryAPI {
     ) => Promise<{ success: true; pet: Pet } | { success: false; message: string }>
     getPreviewImage: (petId: string) => Promise<string | null>
     getImage: (petId: string, pose?: PetVisualState) => Promise<string | null>
-    getSummary: (
-      petId: string
-    ) => Promise<{
+    getSummary: (petId: string) => Promise<{
       name: string
       isPrimary: boolean
       personality: PetPersonality
@@ -122,7 +112,7 @@ export interface PetoryAPI {
     open: () => void
     close: () => void
     getState: () => Promise<PomodoroState>
-    start: () => Promise<PomodoroState>
+    start: (input: PomodoroStartInput) => Promise<PomodoroState>
     pause: () => Promise<PomodoroState>
     resume: () => Promise<PomodoroState>
     end: () => Promise<PomodoroState>
@@ -152,25 +142,28 @@ export interface PetoryAPI {
     close: () => void
     list: () => Promise<Pet[]>
     onListChanged: (callback: () => void) => () => void
+    updateName: (petId: string, name: string) => Promise<Pet>
     updatePersonality: (personality: PetPersonality, petId?: string) => Promise<Pet>
     activate: (petId: string) => Promise<ActivatePetResult>
   }
   data: {
-    export: () => Promise<
-      { success: true; path: string } | { success: false; message: string }
-    >
+    export: () => Promise<{ success: true; path: string } | { success: false; message: string }>
     import: () => Promise<
-      | { success: true; backupDir: string; petFileCount: number; sourcePath: string }
+      | {
+          success: true
+          backupDir: string
+          petFileCount: number
+          sourcePath: string
+        }
       | { success: false; message: string; cancelled?: boolean }
     >
     clearChat: () => Promise<void>
-    deletePetImages: (
-      petId: string
-    ) => Promise<{ success: true } | { success: false; message: string }>
+    deletePetImages: (petId: string) => Promise<{ success: true } | { success: false; message: string }>
     wipeAll: () => Promise<{ success: true }>
   }
   auth: {
     getState: () => Promise<AuthState>
+    requestMagicLink: (email: string) => Promise<MagicLinkRequestResult>
     login: (input: LoginInput) => Promise<AuthActionResult>
     register: (input: RegisterInput) => Promise<AuthActionResult>
     logout: () => Promise<AuthActionResult>
@@ -181,10 +174,12 @@ export interface PetoryAPI {
   }
   payment: {
     getPlans: () => Promise<PaymentPlan[]>
-    purchaseMock: (
-      planId: PaymentPlanId
-    ) => Promise<
-      | { success: true; state: AuthState; poseCompletion?: PoseCompletionSummary }
+    purchaseMock: (planId: PaymentPlanId) => Promise<
+      | {
+          success: true
+          state: AuthState
+          poseCompletion?: PoseCompletionSummary
+        }
       | { success: false; message: string }
     >
   }

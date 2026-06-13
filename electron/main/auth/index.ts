@@ -3,6 +3,8 @@ export {
   getAuthState,
   isAuthenticated,
   login,
+  requestMagicLink,
+  consumeMagicLink,
   logout,
   redeemCode,
   register,

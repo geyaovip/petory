@@ -13,13 +13,13 @@ export function PreferenceGroup({
 }): ReactElement {
   return (
     <section className={className}>
-      <div className="mb-2">
+      <div className="mb-3 px-1">
         <h2 className="text-[13px] font-semibold text-petory-text">{title}</h2>
         {description ? (
           <p className="mt-0.5 text-[12px] text-petory-text-tertiary">{description}</p>
         ) : null}
       </div>
-      <div className="divide-y divide-petory-border border-y border-petory-border">{children}</div>
+      <div className="divide-y divide-petory-border overflow-hidden rounded-2xl border border-petory-border bg-petory-surface px-5">{children}</div>
     </section>
   )
 }
@@ -36,7 +36,7 @@ export function PreferenceRow({
   align?: 'center' | 'start'
 }): ReactElement {
   return (
-    <div className={`flex min-h-[58px] justify-between gap-8 py-3 ${align === 'start' ? 'items-start' : 'items-center'}`}>
+    <div className={`flex min-h-[64px] justify-between gap-8 py-3.5 ${align === 'start' ? 'items-start' : 'items-center'}`}>
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-medium text-petory-text">{title}</p>
         {description ? (

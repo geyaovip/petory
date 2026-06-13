@@ -21,8 +21,8 @@ const variantClass: Record<Variant, string> = {
 }
 
 const sizeClass: Record<Size, string> = {
-  md: 'h-10 px-5 text-[14px] rounded-lg',
-  sm: 'h-8 px-3 text-[13px] rounded-lg'
+  md: 'h-11 px-5 text-[14px] rounded-xl',
+  sm: 'h-9 px-3.5 text-[13px] rounded-lg'
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -41,7 +41,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type="button"
       className={[
-        'inline-flex items-center justify-center font-medium transition-[background-color,border-color,color,transform] duration-150',
+        'inline-flex items-center justify-center font-semibold transition-[background-color,border-color,color,transform,box-shadow] duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary focus-visible:ring-offset-2 focus-visible:ring-offset-petory-bg',
         'disabled:cursor-not-allowed',
         variantClass[variant],

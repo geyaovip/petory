@@ -8,7 +8,7 @@ export function Input({ className = '', fullWidth = true, ...props }: InputProps
   return (
     <input
       className={[
-        'h-10 rounded-lg border border-petory-border bg-petory-surface px-3 text-[14px] text-petory-text outline-none transition-colors',
+        'h-11 rounded-xl border border-petory-border bg-petory-surface px-3.5 text-[14px] text-petory-text outline-none transition-colors',
         'placeholder:text-petory-text-tertiary',
         'focus:border-petory-primary focus:ring-2 focus:ring-petory-primary-soft',
         'disabled:cursor-not-allowed disabled:bg-petory-muted disabled:text-petory-text-tertiary',

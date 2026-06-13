@@ -94,6 +94,7 @@ export const IPC = {
     close: 'petory:pets:close',
     list: 'petory:pets:list',
     listChanged: 'petory:pets:listChanged',
+    updateName: 'petory:pets:updateName',
     updatePersonality: 'petory:pets:updatePersonality',
     activate: 'petory:pets:activate'
   },
@@ -106,6 +107,7 @@ export const IPC = {
   },
   auth: {
     getState: 'petory:auth:getState',
+    requestMagicLink: 'petory:auth:requestMagicLink',
     login: 'petory:auth:login',
     register: 'petory:auth:register',
     logout: 'petory:auth:logout',
@@ -139,23 +141,9 @@ export const IPC = {
   }
 } as const
 
-export type MenuAction =
-  | 'chat'
-  | 'focus'
-  | 'settings'
-  | 'hide'
-  | 'quit'
+export type MenuAction = 'chat' | 'focus' | 'settings' | 'hide' | 'quit'
 
-export type AppMode =
-  | 'auth'
-  | 'onboarding'
-  | 'pet'
-  | 'chat'
-  | 'pomodoro'
-  | 'growth'
-  | 'settings'
-  | 'pets'
-  | 'guide'
+export type AppMode = 'auth' | 'onboarding' | 'pet' | 'chat' | 'pomodoro' | 'growth' | 'settings' | 'pets' | 'guide'
 
 export interface PetDisplaySettings {
   petSize: 'small' | 'medium' | 'large'

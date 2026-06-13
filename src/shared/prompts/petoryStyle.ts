@@ -1,6 +1,6 @@
-export const PETORY_STYLE_PROMPT_BASE = `Keep the exact subject in the reference image unchanged, including identity, species, breed, face, colors, markings, ears, eyes, and body proportions. Change only the pose described below. Show one full-body subject on a plain background, with no text or extra objects.`
+export const PETORY_STYLE_PROMPT_BASE = `Use the reference image only for the pet's identity and appearance. Preserve the same individual pet's species, breed, face, eye color, fur colors, markings, ear shape, and body proportions. Do not preserve or copy the reference pose, body position, camera framing, background, or composition. Repose the pet exactly as instructed below. Show one centered full-body pet on a plain light background, with no text or extra objects.`
 
-export const ANCHOR_STYLE_PROMPT_BASE = `Keep the exact same subject from the reference image. Preserve all identity details and change only the pose described below. Plain background.`
+export const ANCHOR_STYLE_PROMPT_BASE = `Use the reference image only for the same pet's identity and appearance. Preserve its face, colors, markings, ears, eyes, and proportions, but do not copy its pose or composition. Repose the pet exactly as instructed below on a plain light background.`
 
 /** @deprecated Use getStylePrompt('petory', pose) */
 export const PETORY_STYLE_PROMPT = `${PETORY_STYLE_PROMPT_BASE}

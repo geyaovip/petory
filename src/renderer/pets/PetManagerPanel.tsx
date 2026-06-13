@@ -3,7 +3,8 @@ import { PETS_COPY } from '@shared/copy/pets'
 import { PERSONALITIES } from '@shared/constants'
 import { PET_POSE_LABELS, PET_POSE_ORDER } from '@shared/poses'
 import { getStyleDefinition } from '@shared/styles'
-import type { DesktopPetStatus, Pet, PetPersonality, PetPoseType } from '@shared/types/pet'
+import type { DesktopPetStatus, Pet, PetPersonality } from '@shared/types/pet'
+import { Check, PencilSimple, X } from '@phosphor-icons/react'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -11,35 +12,34 @@ import { PanelHeader } from '../components/ui/PanelHeader'
 import { PanelLoading } from '../components/ui/PanelLoading'
 import { Pill } from '../components/ui/Pill'
 import { StatusBanner } from '../components/ui/StatusBanner'
+import { Input } from '../components/ui/Input'
 
 export function PetManagerPanel(): ReactElement {
-  const isMac = window.petory.platform === 'darwin'
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null)
   const [desktopStatus, setDesktopStatus] = useState<DesktopPetStatus | null>(null)
   const [previews, setPreviews] = useState<Record<string, string>>({})
-  const [missingPoseCount, setMissingPoseCount] = useState<Record<string, number>>({})
-  const [status, setStatus] = useState<{ message: string; error: boolean } | null>(null)
+  const [status, setStatus] = useState<{
+    message: string
+    error: boolean
+  } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [regeneratingKey, setRegeneratingKey] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ petId: string; name: string } | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const [savingName, setSavingName] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    petId: string
+    name: string
+  } | null>(null)
 
   const load = useCallback(async () => {
-    const [list, nextDesktopStatus, poseStatus] = await Promise.all([
-      window.petory.pets.list(),
-      window.petory.desktop.getStatus(),
-      window.petory.pet.getPoseCompletionStatus()
-    ])
+    const [list, nextDesktopStatus] = await Promise.all([window.petory.pets.list(), window.petory.desktop.getStatus()])
     setPets(list)
     setDesktopStatus(nextDesktopStatus)
     setSelectedPetId((current) => {
       if (current && list.some((pet) => pet.id === current)) return current
       return list.find((pet) => pet.isActive)?.id ?? list[0]?.id ?? null
     })
-    setMissingPoseCount(
-      Object.fromEntries(poseStatus.pending.map((item) => [item.petId, item.missing.length]))
-    )
-
     const nextPreviews: Record<string, string> = {}
     await Promise.all(
       list.map(async (pet) => {
@@ -56,10 +56,7 @@ export function PetManagerPanel(): ReactElement {
     return window.petory.pets.onListChanged(() => void load())
   }, [load])
 
-  const selectedPet = useMemo(
-    () => pets.find((pet) => pet.id === selectedPetId) ?? null,
-    [pets, selectedPetId]
-  )
+  const selectedPet = useMemo(() => pets.find((pet) => pet.id === selectedPetId) ?? null, [pets, selectedPetId])
 
   const showStatus = (message: string, error = false): void => {
     setStatus({ message, error })
@@ -70,6 +67,27 @@ export function PetManagerPanel(): ReactElement {
     await window.petory.pets.updatePersonality(personality, petId)
     await load()
     showStatus('性格已更新')
+  }
+
+  const beginNameEdit = (pet: Pet): void => {
+    setNameDraft(pet.name)
+    setEditingName(true)
+  }
+
+  const saveName = async (petId: string): Promise<void> => {
+    const nextName = nameDraft.trim()
+    if (!nextName) return showStatus('宠物名称不能为空', true)
+    setSavingName(true)
+    try {
+      await window.petory.pets.updateName(petId, nextName)
+      setEditingName(false)
+      await load()
+      showStatus('名称已更新')
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : '名称更新失败', true)
+    } finally {
+      setSavingName(false)
+    }
   }
 
   const activatePet = async (petId: string): Promise<void> => {
@@ -91,27 +109,6 @@ export function PetManagerPanel(): ReactElement {
     showStatus('已显示在桌面')
   }
 
-  const completePoses = async (petId: string): Promise<void> => {
-    const result = await window.petory.pet.completePoses(petId)
-    if (!result.success) return showStatus(result.message, true)
-    const count = 'addedPoses' in result ? result.addedPoses.length : 0
-    await load()
-    showStatus(count > 0 ? `已补全 ${count} 种姿势` : '姿势已是最新')
-  }
-
-  const regeneratePose = async (petId: string, pose: PetPoseType): Promise<void> => {
-    const key = `${petId}:${pose}`
-    setRegeneratingKey(key)
-    try {
-      const result = await window.petory.pet.regeneratePose(petId, pose)
-      if (!result.success) return showStatus(result.message, true)
-      await load()
-      showStatus(`已重生成「${PET_POSE_LABELS[pose]}」`)
-    } finally {
-      setRegeneratingKey(null)
-    }
-  }
-
   const deleteImages = async (petId: string): Promise<void> => {
     const result = await window.petory.data.deletePetImages(petId)
     if (!result.success) return showStatus(result.message, true)
@@ -123,13 +120,7 @@ export function PetManagerPanel(): ReactElement {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-petory-bg text-petory-text">
-      <div
-        className={`shrink-0 border-b border-petory-border pb-4 pr-7 pt-5 ${
-          isMac ? 'pl-[84px]' : 'pl-7'
-        }`}
-      >
         <PanelHeader
-          className="pt-0"
           title="宠物管理"
           subtitle={
             desktopStatus
@@ -139,13 +130,8 @@ export function PetManagerPanel(): ReactElement {
           onClose={() => window.petory.pets.close()}
         />
         {status ? (
-          <StatusBanner
-            className="mt-3"
-            message={status.message}
-            variant={status.error ? 'error' : 'success'}
-          />
+        <StatusBanner className="mx-5 mt-4" message={status.message} variant={status.error ? 'error' : 'success'} />
         ) : null}
-      </div>
 
       {pets.length === 0 ? (
         <div className="flex min-h-0 flex-1 items-center justify-center p-8">
@@ -153,12 +139,17 @@ export function PetManagerPanel(): ReactElement {
             title={PETS_COPY.empty.title}
             description={PETS_COPY.empty.description}
             actionLabel={PETS_COPY.empty.action}
-            onAction={() => window.petory.pet.openOnboarding({ mode: 'new', returnTo: 'pets' })}
+            onAction={() =>
+              window.petory.pet.openOnboarding({
+                mode: 'new',
+                returnTo: 'pets'
+              })
+            }
           />
         </div>
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="flex min-h-0 flex-col border-r border-petory-border bg-petory-surface/55 p-4">
+          <aside className="flex min-h-0 flex-col border-r border-petory-border bg-petory-surface p-4">
             <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-petory-text-tertiary">
               我的宠物 · {pets.length}
             </p>
@@ -170,11 +161,12 @@ export function PetManagerPanel(): ReactElement {
                     <button
                       type="button"
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                        selected
-                          ? 'bg-petory-primary-soft text-petory-text'
-                          : 'hover:bg-petory-muted'
+                        selected ? 'bg-petory-primary-soft text-petory-text' : 'hover:bg-petory-muted'
                       }`}
-                      onClick={() => setSelectedPetId(pet.id)}
+                      onClick={() => {
+                        setEditingName(false)
+                        setSelectedPetId(pet.id)
+                      }}
                     >
                       <span className="bg-petory-checker-sm flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-petory-border">
                         {previews[pet.id] ? (
@@ -195,15 +187,20 @@ export function PetManagerPanel(): ReactElement {
             <Button
               className="mt-3"
               fullWidth
-              onClick={() => window.petory.pet.openOnboarding({ mode: 'new', returnTo: 'pets' })}
+              onClick={() =>
+                window.petory.pet.openOnboarding({
+                  mode: 'new',
+                  returnTo: 'pets'
+                })
+              }
             >
               新建宠物
             </Button>
           </aside>
 
           {selectedPet ? (
-            <main className="min-h-0 overflow-y-auto px-7 py-6">
-              <section className="flex items-center gap-5">
+            <main className="min-h-0 overflow-y-auto overscroll-contain px-7 py-6">
+              <section className="flex items-center gap-5 rounded-2xl border border-petory-border bg-petory-surface p-5">
                 <div className="bg-petory-checker flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-petory-border">
                   {previews[selectedPet.id] ? (
                     <img
@@ -217,7 +214,56 @@ export function PetManagerPanel(): ReactElement {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-[24px] font-semibold">{selectedPet.name || '未命名'}</h2>
+                    {editingName ? (
+                      <form
+                        className="flex min-w-[260px] max-w-[420px] flex-1 items-center gap-2"
+                        onSubmit={(event) => {
+                          event.preventDefault()
+                          void saveName(selectedPet.id)
+                        }}
+                      >
+                        <Input
+                          autoFocus
+                          className="h-9"
+                          maxLength={20}
+                          value={nameDraft}
+                          onChange={(event) => setNameDraft(event.target.value)}
+                        />
+                        <Button
+                          aria-label="保存名称"
+                          className="w-9 px-0"
+                          disabled={!nameDraft.trim() || savingName}
+                          size="sm"
+                          type="submit"
+                        >
+                          <Check size={16} weight="bold" />
+                        </Button>
+                        <Button
+                          aria-label="取消编辑"
+                          className="w-9 px-0"
+                          disabled={savingName}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingName(false)}
+                        >
+                          <X size={16} weight="bold" />
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <h2 className="truncate text-[24px] font-semibold">
+                          {selectedPet.name || '未命名'}
+                        </h2>
+                        <button
+                          type="button"
+                          aria-label="编辑宠物名称"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-petory-text-tertiary transition-colors hover:bg-petory-muted hover:text-petory-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-petory-primary"
+                          onClick={() => beginNameEdit(selectedPet)}
+                        >
+                          <PencilSimple size={16} weight="bold" />
+                        </button>
+                      </div>
+                    )}
                     {selectedPet.isActive ? <Pill selected>主宠</Pill> : null}
                     {selectedPet.onDesktop ? <Pill>桌面中</Pill> : null}
                   </div>
@@ -255,31 +301,21 @@ export function PetManagerPanel(): ReactElement {
               </section>
 
               <section className="mt-7 border-t border-petory-border pt-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-[13px] font-semibold">姿势</h3>
-                    <p className="mt-1 text-[12px] text-petory-text-tertiary">
-                      点击已有姿势可单独重生成，不消耗生成额度。
-                    </p>
-                  </div>
-                  {missingPoseCount[selectedPet.id] ? (
-                    <Button size="sm" variant="secondary" onClick={() => void completePoses(selectedPet.id)}>
-                      补全 {missingPoseCount[selectedPet.id]} 种
-                    </Button>
-                  ) : null}
+                <div>
+                  <h3 className="text-[13px] font-semibold">姿势</h3>
+                  <p className="mt-1 text-[12px] text-petory-text-tertiary">
+                    创建时由系统生成，完成后仅用于状态切换。
+                  </p>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {PET_POSE_ORDER.filter((pose) => Boolean(selectedPet.posePaths?.[pose])).map((pose) => {
-                    const key = `${selectedPet.id}:${pose}`
                     return (
-                      <Pill
+                      <span
                         key={pose}
-                        disabled={selectedPet.isSample || Boolean(regeneratingKey)}
-                        selected={regeneratingKey === key}
-                        onClick={() => void regeneratePose(selectedPet.id, pose)}
+                        className="rounded-lg border border-petory-border bg-petory-muted px-3 py-1.5 text-[12px] font-medium text-petory-text-secondary"
                       >
-                        {regeneratingKey === key ? '生成中…' : PET_POSE_LABELS[pose]}
-                      </Pill>
+                        {PET_POSE_LABELS[pose]}
+                      </span>
                     )
                   })}
                 </div>
@@ -288,9 +324,7 @@ export function PetManagerPanel(): ReactElement {
               {!selectedPet.isSample && selectedPet.imageOriginalPath ? (
                 <section className="mt-7 border-t border-petory-border pt-6">
                   <h3 className="text-[13px] font-semibold">重新生成</h3>
-                  <p className="mt-1 text-[12px] text-petory-text-tertiary">
-                    保留这只宠物，重新选择照片与生成结果。
-                  </p>
+                  <p className="mt-1 text-[12px] text-petory-text-tertiary">保留这只宠物，重新选择照片与生成结果。</p>
                   <Button
                     className="mt-3"
                     size="sm"
@@ -312,7 +346,12 @@ export function PetManagerPanel(): ReactElement {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setDeleteTarget({ petId: selectedPet.id, name: selectedPet.name })}
+                  onClick={() =>
+                    setDeleteTarget({
+                      petId: selectedPet.id,
+                      name: selectedPet.name
+                    })
+                  }
                 >
                   删除本地图片文件
                 </Button>
