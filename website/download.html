@@ -26,12 +26,20 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=2.6.0" />
+    <link rel="stylesheet" href="styles.css?v=2.9.0" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "FAQPage",
         "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Petory 支持 macOS 和 Windows 吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "支持。macOS 需要 12 或更高版本（Apple Silicon 与 Intel），Windows 需要 10 或 11 的 64 位系统。"
+            }
+          },
           {
             "@type": "Question",
             "name": "Petory 需要多少磁盘空间？",
@@ -80,23 +88,23 @@
       <main class="download-main">
         <section class="download-hero">
           <p class="home-eyebrow">DOWNLOAD PETORY</p>
-          <h1>选一个版本，<br />让它来到桌面。</h1>
-          <p>安装后可以先体验示例宠物，也可以用自己的照片创建专属桌宠。</p>
+          <h1>下载 Petory 桌宠<br />macOS / Windows</h1>
+          <p>免费下载 Petory 桌面宠物客户端。支持 <strong>macOS 桌宠</strong>（Apple Silicon / Intel）与 <strong>Windows 桌宠</strong>（64 位），安装后可直接体验示例宠物，或上传照片创建专属 AI 桌宠。</p>
           <span class="download-version">当前版本 <strong id="release-version">—</strong></span>
         </section>
 
         <section class="platform-list" aria-label="Petory 下载版本">
           <article class="platform-row" id="mac">
-            <div class="platform-name"><span>01</span><h2>macOS</h2></div>
-            <p>适用于 Apple Silicon 与 Intel，需要 macOS 12 或更高版本。</p>
+            <div class="platform-name"><span>01</span><h2>macOS 桌宠</h2></div>
+            <p>原生 macOS 桌面宠物应用，适用于 Apple Silicon 与 Intel，需要 macOS 12 或更高版本。</p>
             <div class="platform-action">
               <a class="home-primary-action" id="mac-download" href="#">下载 macOS 版 <span aria-hidden="true">↓</span></a>
               <small id="mac-meta">Universal · macOS 12+</small>
             </div>
           </article>
           <article class="platform-row" id="win">
-            <div class="platform-name"><span>02</span><h2>Windows</h2></div>
-            <p>适用于 Windows 10 / 11 的 64 位系统。</p>
+            <div class="platform-name"><span>02</span><h2>Windows 桌宠</h2></div>
+            <p>原生 Windows 桌面宠物应用，适用于 Windows 10 / 11 的 64 位系统。</p>
             <div class="platform-action">
               <a class="home-primary-action" id="win-download" href="#">下载 Windows 版 <span aria-hidden="true">↓</span></a>
               <small id="win-meta">64 位 · Windows 10 / 11</small>
@@ -110,6 +118,7 @@
             <h2>你可能想知道</h2>
           </div>
           <dl>
+            <div><dt>支持哪些系统？</dt><dd>macOS 12+（Universal）与 Windows 10/11 64 位。详见上方平台说明。</dd></div>
             <div><dt>需要多少空间？</dt><dd>建议预留约 200 MB 可用磁盘空间。</dd></div>
             <div><dt>必须上传照片吗？</dt><dd>不用。首次打开可以直接体验示例宠物。</dd></div>
             <div><dt>什么时候需要联网？</dt><dd>登录、创建桌宠与 AI 对话时需要网络连接。</dd></div>
@@ -120,7 +129,7 @@
 
       <footer class="home-footer">
         <p>© 2026 Petory</p>
-        <div><a href="privacy.html">隐私政策</a><a href="terms.html">用户协议</a><a href="download.html">下载</a></div>
+        <div><a href="features.html">功能介绍</a><a href="privacy.html">隐私政策</a><a href="terms.html">用户协议</a><a href="download.html">下载</a></div>
       </footer>
     </div>
     <script src="download.js?v=2.6.0"></script>
