@@ -419,3 +419,9 @@ try {
 } catch {
   console.warn('⚠ og-share.png generation skipped')
 }
+
+try {
+  execSync('node scripts/generate-serp-icons.mjs', { cwd: root, stdio: 'inherit' })
+} catch {
+  console.warn('⚠ serp icon generation skipped')
+}

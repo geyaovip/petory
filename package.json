@@ -31,6 +31,7 @@
     "qa:smoke": "node scripts/qa-smoke.mjs",
     "sync:brand": "node scripts/sync-brand-assets.mjs",
     "sync:og": "node scripts/generate-og-share.mjs",
+    "sync:serp": "node scripts/generate-serp-icons.mjs",
     "release:sync": "node scripts/sync-release-manifest.mjs",
     "release:prepare": "npm run release:sync && node scripts/copy-update-feed.mjs && npm run qa",
     "website:preview": "npx --yes serve website -p 5180",

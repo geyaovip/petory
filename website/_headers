@@ -4,5 +4,15 @@
 /robots.txt
   Content-Type: text/plain; charset=utf-8
 
+/favicon.ico
+  Content-Type: image/png
+  Cache-Control: public, max-age=604800
+
+/site-icon-192.png
+  Cache-Control: public, max-age=604800
+
+/site-icon-96.png
+  Cache-Control: public, max-age=604800
+
 /assets/og-share.png
   Cache-Control: public, max-age=604800

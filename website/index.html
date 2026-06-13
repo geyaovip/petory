@@ -22,10 +22,13 @@
     <meta name="twitter:title" content="Petory — AI 桌面宠物，上传照片生成专属桌宠" />
     <meta name="twitter:description" content="上传一张照片，生成会聊天、会陪伴的桌面伙伴。支持 macOS 与 Windows，免费下载。" />
     <meta name="twitter:image" content="https://petory.chat/assets/og-share.png" />
-    <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="icon" href="https://petory.chat/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" href="https://petory.chat/site-icon-192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="https://petory.chat/site-icon-96.png" sizes="96x96" />
+    <link rel="icon" type="image/png" href="https://petory.chat/favicon-48.png" sizes="48x48" />
+    <link rel="icon" type="image/png" href="https://petory.chat/favicon-32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="https://petory.chat/favicon-16.png" sizes="16x16" />
+    <link rel="apple-touch-icon" sizes="180x180" href="https://petory.chat/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css?v=2.9.0" />
     <script type="application/ld+json">
       {
@@ -35,7 +38,12 @@
             "@type": "Organization",
             "name": "Petory",
             "url": "https://petory.chat/",
-            "logo": "https://petory.chat/assets/logo.png"
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://petory.chat/site-icon-192.png",
+              "width": 192,
+              "height": 192
+            }
           },
           {
             "@type": "WebSite",
