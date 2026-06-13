@@ -1,3 +1,8 @@
+/**
+ * Google Search favicons — WEBSITE ONLY (website/).
+ * Does not touch build/dock-icon.png, src/renderer/public/, or brand/generated/.
+ * Run: npm run sync:serp (after sync:brand when deploying the site).
+ */
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'

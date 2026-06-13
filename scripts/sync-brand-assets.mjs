@@ -370,7 +370,7 @@ try {
 
 fs.rmSync(iconset, { recursive: true, force: true })
 
-const webFaviconMirrors = (name) => [`website/${name}`, `server/admin/public/${name}`]
+const webFaviconMirrors = (name) => [`server/admin/public/${name}`]
 const rendererPublicMirrors = (name) => [`src/renderer/public/${name}`]
 
 await mirrorFile('logo.png', [
@@ -383,7 +383,7 @@ for (const size of [16, 32, 48]) {
   const name = `favicon-${size}.png`
   await mirrorFile(name, [...webFaviconMirrors(name), ...rendererPublicMirrors(name)])
 }
-await mirrorFile('favicon.png', [...webFaviconMirrors('favicon.png'), ...rendererPublicMirrors('favicon.png')])
+await mirrorFile('favicon.png', [...rendererPublicMirrors('favicon.png'), ...webFaviconMirrors('favicon.png')])
 await mirrorFile('apple-touch-icon.png', webFaviconMirrors('apple-touch-icon.png'))
 
 await writeAppIcon(
@@ -418,10 +418,4 @@ try {
   execSync('node scripts/generate-og-share.mjs', { cwd: root, stdio: 'inherit' })
 } catch {
   console.warn('⚠ og-share.png generation skipped')
-}
-
-try {
-  execSync('node scripts/generate-serp-icons.mjs', { cwd: root, stdio: 'inherit' })
-} catch {
-  console.warn('⚠ serp icon generation skipped')
 }
