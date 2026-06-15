@@ -18,6 +18,7 @@ function errorStatus(code?: string): number {
   if (code === 'DEVICE_FLAGGED') return 403
   if (code === 'RATE_LIMIT') return 429
   if (code === 'SERVICE_DISABLED') return 503
+  if (code === 'IMAGE_NOT_CONFIGURED') return 503
   return 500
 }
 

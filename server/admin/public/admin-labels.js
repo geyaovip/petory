@@ -45,6 +45,7 @@
     RATE_LIMIT: '请求过于频繁',
     UPLOAD_INVALID: '图片无效',
     REMBG_FAILED: '桌面抠图失败',
+    IMAGE_NOT_CONFIGURED: '图像 API 未配置',
     UNKNOWN: '未知错误'
   }
   const AUDIT_ACTION = {
@@ -154,7 +155,7 @@
 
   function friendlyError(code, message) {
     const label = errorLabel(code)
-    if (!message || /MiniMax|rembg|HTTP|KIMI_|pip3|api\./i.test(message)) return label
+    if (!message || /MiniMax|rembg|HTTP|KIMI_|pip3|api\.|IMAGE_NOT_CONFIGURED/i.test(message)) return label
     return `${label}：${message}`
   }
 

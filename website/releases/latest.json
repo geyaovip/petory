@@ -1,19 +1,20 @@
 {
-  "version": "2.4.8",
+  "version": "2.4.9",
   "releasedAt": "2026-06-15",
   "mac": {
-    "fileName": "Petory-2.4.8-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.8/Petory-2.4.8-universal.dmg",
-    "sizeLabel": "~189 MB"
+    "fileName": "Petory-2.4.9-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.9/Petory-2.4.9-universal.dmg",
+    "sizeLabel": "~190 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.8.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.8/Petory-Setup-2.4.8.exe",
+    "fileName": "Petory-Setup-2.4.9.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.9/Petory-Setup-2.4.9.exe",
     "sizeLabel": "~92 MB"
   },
   "updateFeed": "https://petory.chat/releases",
   "changelog": [
-    "修复登录页与引导流程中品牌 Logo 不显示的问题",
-    "统一客户端静态资源路径，兼容 macOS/Windows 安装包 file:// 加载"
+    "修复上传后自动生成重复请求 3 次的问题",
+    "修复登录页品牌 Logo 不显示",
+    "服务端未配置图像 API 时不再创建大量失败记录"
   ]
 }

@@ -9,7 +9,7 @@ import { PET_POSE_LABELS } from '../../../src/shared/poses.js'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js'
 import { prisma } from '../lib/prisma.js'
 import { validatePoses } from './entitlementService.js'
-import { generateImage } from './seedreamService.js'
+import { generateImage, assertImageApiConfigured } from './seedreamService.js'
 import { canConsumeGeneration, consumeGeneration } from './quotaService.js'
 import { assertGenerationEnabled } from './systemConfigService.js'
 import {
@@ -92,6 +92,15 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
 
   const poseCheck = validatePoses(user, input.poses)
   if (!poseCheck.ok) return poseCheck
+
+  const imageApiCheck = assertImageApiConfigured()
+  if (!imageApiCheck.ok) {
+    return {
+      success: false as const,
+      code: imageApiCheck.code,
+      message: imageApiCheck.message
+    }
+  }
 
   const deductQuota = input.jobType === 'full_batch'
   if (deductQuota) {

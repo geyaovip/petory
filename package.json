@@ -1,6 +1,6 @@
 {
   "name": "petory",
-  "version": "2.4.8",
+  "version": "2.4.9",
   "description": "Upload a photo — let it move into your computer.",
   "author": "Petory",
   "main": "./out/main/index.js",
@@ -39,7 +39,8 @@
     "server:install": "npm install --prefix server",
     "server:dev": "npm run dev --prefix server",
     "server:db:up": "npm run db:up --prefix server",
-    "server:db": "npm run db:push --prefix server"
+    "server:db": "npm run db:push --prefix server",
+    "deploy:env": "node scripts/merge-deploy-env.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

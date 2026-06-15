@@ -4,7 +4,7 @@ import sharp from 'sharp'
 import type { ReferenceMode } from '../../../src/shared/generation/reference'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet'
 import type { ServerBatchResponse, ServerJobResponse } from '../../../src/shared/types/api'
-import { apiFetch } from '../api/client'
+import { ApiError, apiFetch } from '../api/client'
 import { getLocalDeviceId } from '../api/deviceId'
 import { applyQuotaFromResponse } from '../api/remoteQuotaStore'
 import { prepareReferenceFromPath } from './prepareReference'
@@ -61,8 +61,27 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function isRetryableStatus(status: number): boolean {
-  return status === 0 || status === 408 || status === 429 || status >= 500
+/** Business / config failures must not spawn duplicate generation batches on retry. */
+const NON_RETRYABLE_CODES = new Set([
+  'GENERATION_FAILED',
+  'IMAGE_NOT_CONFIGURED',
+  'QUOTA_EXCEEDED',
+  'USER_DISABLED',
+  'UPLOAD_INVALID',
+  'POSE_LOCKED',
+  'POSE_INVALID',
+  'DEVICE_FLAGGED',
+  'API_NOT_CONFIGURED',
+  'AUTH_EXPIRED',
+  'SERVICE_DISABLED',
+  'RATE_LIMIT'
+])
+
+function isRetryableError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false
+  if (error.code && NON_RETRYABLE_CODES.has(error.code)) return false
+  if (error.status === 0 || error.status === 408 || error.status === 429) return true
+  return error.status === 502 || error.status === 503 || error.status === 504
 }
 
 async function withRetry<T>(label: string, run: () => Promise<T>): Promise<T> {
@@ -72,11 +91,7 @@ async function withRetry<T>(label: string, run: () => Promise<T>): Promise<T> {
       return await run()
     } catch (error) {
       lastError = error
-      const status =
-        error && typeof error === 'object' && 'status' in error
-          ? Number((error as { status: number }).status)
-          : 0
-      if (attempt >= MAX_RETRIES || !isRetryableStatus(status)) {
+      if (attempt >= MAX_RETRIES || !isRetryableError(error)) {
         throw error
       }
       console.warn(`[petory] ${label} failed (attempt ${attempt + 1}), retrying…`, error)

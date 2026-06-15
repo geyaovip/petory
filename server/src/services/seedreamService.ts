@@ -18,6 +18,17 @@ function toDataUrl(buffer: Buffer, mimeType = 'image/png'): string {
   return `data:${mimeType};base64,${buffer.toString('base64')}`
 }
 
+export function assertImageApiConfigured():
+  | { ok: true }
+  | { ok: false; code: 'IMAGE_NOT_CONFIGURED'; message: string } {
+  if (config.arkApiKey) return { ok: true }
+  return {
+    ok: false,
+    code: 'IMAGE_NOT_CONFIGURED',
+    message: '服务端未配置图像生成 API Key（ARK_API_KEY）。'
+  }
+}
+
 export async function generateImage(
   imageBuffer: Buffer,
   styleType: PetStyleType,

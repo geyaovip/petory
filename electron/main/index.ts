@@ -137,6 +137,7 @@ clearStaleDevSingletonLocks()
 const AUTH_PROTOCOL = 'petory'
 let pendingAuthDeepLink = process.argv.find((arg) => arg.startsWith(`${AUTH_PROTOCOL}://`)) ?? null
 let authDeepLinkInFlight = false
+const generationInFlight = new Set<string>()
 
 if (app.isPackaged) {
   app.setAsDefaultProtocolClient(AUTH_PROTOCOL)
@@ -395,14 +396,26 @@ function registerIpc(): void {
   })
 
   ipcMain.handle(IPC.pet.generate, async (_event, petId: string) => {
-    updatePet(petId, { styleType: 'petory' })
-    const result = await runGenerationPipeline(petId)
-    if (result.success) {
-      const pet = getPetById(petId)
-      if (pet) patchUserSettings({ lastSelectedStyle: pet.styleType })
-      broadcastAuthStateChanged()
+    if (generationInFlight.has(petId)) {
+      return {
+        success: false as const,
+        code: 'generation_failed' as const,
+        message: '正在生成中，请稍候…'
+      }
     }
-    return result
+    generationInFlight.add(petId)
+    try {
+      updatePet(petId, { styleType: 'petory' })
+      const result = await runGenerationPipeline(petId)
+      if (result.success) {
+        const pet = getPetById(petId)
+        if (pet) patchUserSettings({ lastSelectedStyle: pet.styleType })
+        broadcastAuthStateChanged()
+      }
+      return result
+    } finally {
+      generationInFlight.delete(petId)
+    }
   })
 
   ipcMain.handle(IPC.pet.finalize, async (_event, input: FinalizePetInput) => {

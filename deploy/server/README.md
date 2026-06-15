@@ -42,6 +42,7 @@ cd /home/ubuntu/apps/petory/current/deploy/server
 cp env.example .env
 # Fill production secrets in .env.
 # Magic Link login requires RESEND_API_KEY and a verified MAIL_FROM domain.
+# Remote image generation (logged-in users) requires ARK_API_KEY from Volcengine Ark / Seedream.
 docker compose up -d --build
 docker compose ps
 curl http://127.0.0.1:8787/health
@@ -58,6 +59,27 @@ docker compose -f deploy/server/compose.yaml up -d --build
 docker compose -f deploy/server/compose.yaml exec -T api npx prisma db push
 curl http://127.0.0.1:8787/health
 ```
+
+Verify image API is configured (`imageApi: true`):
+
+```bash
+curl -s https://api.petory.chat/health
+```
+
+### Sync secrets from local dev machine
+
+On your Mac (after `server/.env` has `ARK_API_KEY`):
+
+```bash
+npm run deploy:env
+# copies ARK / Resend / Kimi keys into deploy/server/.env (gitignored)
+
+scp deploy/server/.env ubuntu@YOUR_VPS:/home/ubuntu/apps/petory/current/deploy/server/.env
+ssh ubuntu@YOUR_VPS 'cd /home/ubuntu/apps/petory/current && git pull --ff-only && docker compose -f deploy/server/compose.yaml up -d --build'
+curl -s https://api.petory.chat/health
+```
+
+Never commit `deploy/server/.env`.
 
 ## Backup
 

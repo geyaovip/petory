@@ -5,7 +5,7 @@ import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js
 import { prisma } from '../lib/prisma.js'
 import { assertDeviceAllowed } from './deviceGuardService.js'
 import { assertGenerationEnabled } from './systemConfigService.js'
-import { generateImage } from './seedreamService.js'
+import { generateImage, assertImageApiConfigured } from './seedreamService.js'
 import {
   saveClientPosePreview,
   saveInputImage,
@@ -50,6 +50,15 @@ export async function createSinglePoseRegen(
 
   if (!ALLOWED_MIME.has(input.mimeType)) {
     return { success: false as const, code: 'UPLOAD_INVALID', message: '不支持的图片格式。' }
+  }
+
+  const imageApiCheck = assertImageApiConfigured()
+  if (!imageApiCheck.ok) {
+    return {
+      success: false as const,
+      code: imageApiCheck.code,
+      message: imageApiCheck.message
+    }
   }
 
   const job = await prisma.generationJob.create({

@@ -252,6 +252,7 @@ function mapBatchFailure(message?: string, code?: string): Error {
   if (code === 'RATE_LIMIT') return new Error('rate_limit')
   if (code === 'NETWORK_ERROR') return new Error('network_error')
   if (message?.includes('额度')) return new Error(message)
+  if (code === 'IMAGE_NOT_CONFIGURED') return new Error('image_not_configured')
   return new Error(message || 'generation_failed')
 }
 
@@ -287,6 +288,13 @@ function mapPipelineError(error: unknown): GenerationFailure | CompletePosesResu
   }
   if (error instanceof Error && error.message === 'service_disabled') {
     return { success: false, code: 'service_disabled', message: ERROR_MESSAGES.service_disabled }
+  }
+  if (error instanceof Error && error.message === 'image_not_configured') {
+    return {
+      success: false,
+      code: 'service_disabled',
+      message: '图像生成服务尚未配置完成，请稍后再试。'
+    }
   }
   if (error instanceof Error && error.message === 'network_error') {
     return { success: false, code: 'network_error', message: ERROR_MESSAGES.network_error }

@@ -19,7 +19,13 @@ export function createApp() {
 
   app.use('*', cors())
 
-  app.get('/health', (c) => c.json({ ok: true, version: 'B1.4.0' }))
+  app.get('/health', (c) =>
+    c.json({
+      ok: true,
+      version: 'B1.4.0',
+      imageApi: Boolean(config.arkApiKey)
+    })
+  )
 
   app.get('/auth/callback', (c) => {
     const token = c.req.query('token') ?? ''
