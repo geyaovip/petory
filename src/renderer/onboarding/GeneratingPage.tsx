@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react'
 import { ONBOARDING_COPY } from '@shared/copy/onboarding'
 import type { GenerationPhase } from '@shared/types/pet'
+import { BrandLogo } from '../components/BrandLogo'
 import { PageShell } from '../components/ui/PageShell'
 
 const PHASE_HEADLINE: Record<GenerationPhase, string> = {
@@ -40,7 +41,7 @@ export function GeneratingPage(): ReactElement {
 
   return (
     <PageShell className="items-center justify-center text-center">
-      <img src="/logo.png" alt="" className="mb-8 h-14 w-auto animate-pulse" />
+      <BrandLogo alt="" className="mb-8 h-14 w-auto animate-pulse" />
       <p className="text-[18px] font-medium">{PHASE_HEADLINE[phase]}</p>
       {detailLine ? (
         <p className="mt-2 text-[13px] text-petory-text-secondary">{detailLine}</p>

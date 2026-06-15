@@ -1,20 +1,19 @@
 {
-  "version": "2.4.7",
+  "version": "2.4.8",
   "releasedAt": "2026-06-15",
   "mac": {
-    "fileName": "Petory-2.4.7-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.7/Petory-2.4.7-universal.dmg",
-    "sizeLabel": "~189 MB"
+    "fileName": "Petory-2.4.8-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.8/Petory-2.4.8-universal.dmg",
+    "sizeLabel": "~190 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.7.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.7/Petory-Setup-2.4.7.exe",
+    "fileName": "Petory-Setup-2.4.8.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.8/Petory-Setup-2.4.8.exe",
     "sizeLabel": "~92 MB"
   },
   "updateFeed": "https://petory.chat/releases",
   "changelog": [
-    "统一 Magic Link 登录，移除密码登录与本地 mock 认证",
-    "优化桌宠生成预览体验",
-    "更新示例宠物姿态资源与品牌图标"
+    "修复登录页与引导流程中品牌 Logo 不显示的问题",
+    "统一客户端静态资源路径，兼容 macOS/Windows 安装包 file:// 加载"
   ]
 }

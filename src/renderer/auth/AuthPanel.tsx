@@ -6,6 +6,7 @@ import { LinkButton } from '../components/ui/LinkButton'
 import { MaintenanceNotice } from '../components/MaintenanceNotice'
 import { PageShell } from '../components/ui/PageShell'
 import { AUTH_COPY } from '@shared/copy/auth'
+import { BrandLogo } from '../components/BrandLogo'
 
 export function AuthPanel(): ReactElement {
   const [email, setEmail] = useState('')
@@ -46,7 +47,7 @@ export function AuthPanel(): ReactElement {
   return (
     <PageShell className="justify-center bg-petory-surface">
       <div className="mx-auto w-full max-w-[360px]">
-        <img src="/logo.png" alt="Petory" className="mb-7 h-12 w-auto" />
+        <BrandLogo className="mb-7 h-12 w-auto" />
         <h1 className="text-[24px] font-semibold tracking-[-0.02em]">登录 Petory</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-petory-text-secondary">
           {AUTH_COPY.subtitleRemote}
