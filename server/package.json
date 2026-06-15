@@ -10,7 +10,6 @@
     "db:up": "docker compose -f ../docker-compose.yml up -d postgres",
     "db:down": "docker compose -f ../docker-compose.yml stop postgres",
     "db:push": "npx prisma db push",
-    "admin:reset": "tsx scripts/reset-admin.ts",
     "db:generate": "npx prisma generate",
     "postinstall": "npx prisma generate"
   },

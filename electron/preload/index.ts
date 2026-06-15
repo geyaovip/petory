@@ -13,9 +13,7 @@ import type { PomodoroStartInput, PomodoroState } from '../../src/shared/types/p
 import type {
   AuthActionResult,
   AuthState,
-  LoginInput,
-  MagicLinkRequestResult,
-  RegisterInput
+  MagicLinkRequestResult
 } from '../../src/shared/types/auth'
 import type { UserSettings } from '../../src/shared/types/settings'
 import type { LegalAcceptance } from '../../src/shared/types/legal'
@@ -210,8 +208,6 @@ contextBridge.exposeInMainWorld('petory', {
     getState: (): Promise<AuthState> => ipcRenderer.invoke(IPC.auth.getState),
     requestMagicLink: (email: string): Promise<MagicLinkRequestResult> =>
       ipcRenderer.invoke(IPC.auth.requestMagicLink, email),
-    login: (input: LoginInput): Promise<AuthActionResult> => ipcRenderer.invoke(IPC.auth.login, input),
-    register: (input: RegisterInput): Promise<AuthActionResult> => ipcRenderer.invoke(IPC.auth.register, input),
     logout: (): Promise<AuthActionResult> => ipcRenderer.invoke(IPC.auth.logout),
     refresh: (): Promise<AuthState> => ipcRenderer.invoke(IPC.auth.refresh),
     onStateChanged: (callback: (state: AuthState) => void): (() => void) => {

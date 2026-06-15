@@ -46,17 +46,6 @@ export interface AuthState {
   mockPaymentEnabled?: boolean
 }
 
-export interface LoginInput {
-  email: string
-  password: string
-}
-
-export interface RegisterInput {
-  email: string
-  password: string
-  displayName?: string
-}
-
 export type MagicLinkRequestResult =
   | { success: true; message: string }
   | { success: false; message: string }

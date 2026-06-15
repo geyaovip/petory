@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto'
 import { prisma } from '../lib/prisma.js'
-import { hashPassword, verifyPassword } from '../lib/password.js'
+import { hashPassword } from '../lib/password.js'
 import { signToken } from '../lib/jwt.js'
 import { PLAN_LIMITS } from '../../../src/shared/entitlements.js'
 import type { PlanTier } from '../../../src/shared/types/auth.js'
@@ -125,106 +125,92 @@ export async function consumeMagicLink(rawToken: string, meta?: { ip?: string })
   return issueUserSession(user)
 }
 
-export async function registerUser(
-  input: {
-    email: string
-    password: string
-    displayName?: string
-  },
-  meta?: { ip?: string }
-) {
-  const sys = await getSystemConfig()
-  if (!sys.registrationOpen) {
-    return { success: false as const, message: '当前暂未开放注册。' }
-  }
+export async function requestAdminMagicLink(input: { email: string }) {
   const email = normalizeEmail(input.email)
   if (!EMAIL_RE.test(email)) {
     return { success: false as const, message: '请输入有效的邮箱地址。' }
   }
-  if (input.password.length < 6) {
-    return { success: false as const, message: '密码至少 6 位。' }
+
+  const admin = await prisma.adminUser.findUnique({ where: { email } })
+  // Keep this response generic so the endpoint cannot be used to enumerate admins.
+  if (!admin || admin.status !== 'active') {
+    return { success: true as const, message: '如果该邮箱已获授权，登录链接将发送到邮箱。' }
   }
 
-  const exists = await prisma.user.findUnique({ where: { email } })
-  if (exists) {
-    return { success: false as const, message: '该邮箱已注册，请直接登录。' }
+  const latestToken = await prisma.adminMagicLinkToken.findFirst({
+    where: { adminId: admin.id },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true }
+  })
+  if (latestToken && Date.now() - latestToken.createdAt.getTime() < MAGIC_LINK_COOLDOWN_MS) {
+    return { success: false as const, message: '登录邮件已发送，请稍后再试。' }
   }
 
-  const displayName = input.displayName?.trim() || email.split('@')[0] || 'Petory 用户'
-  const user = await prisma.user.create({
+  await prisma.adminMagicLinkToken.deleteMany({
+    where: { adminId: admin.id, consumedAt: null }
+  })
+  const rawToken = randomBytes(32).toString('base64url')
+  const tokenHash = hashMagicLinkToken(rawToken)
+  await prisma.adminMagicLinkToken.create({
     data: {
-      email,
-      passwordHash: await hashPassword(input.password),
-      displayName
+      adminId: admin.id,
+      tokenHash,
+      expiresAt: new Date(Date.now() + MAGIC_LINK_TTL_MS)
     }
   })
-  await Promise.all([ensureQuota(user), ensureChatQuota(user)])
-  await logUserLogin({ userId: user.id, email: user.email, ip: meta?.ip })
 
-  return issueUserSession(user)
+  try {
+    await sendMagicLink({
+      to: email,
+      magicLinkUrl: `${config.publicBaseUrl}/admin/auth/callback?token=${encodeURIComponent(rawToken)}`,
+      expiresInMinutes: Math.floor(MAGIC_LINK_TTL_MS / 60_000),
+      audience: 'admin'
+    })
+  } catch (error) {
+    await prisma.adminMagicLinkToken.deleteMany({ where: { tokenHash } })
+    return {
+      success: false as const,
+      message: error instanceof Error ? error.message : '登录邮件发送失败，请稍后再试。'
+    }
+  }
+
+  return { success: true as const, message: '管理员登录链接已发送，请查收邮件。' }
 }
 
-export async function loginUser(
-  input: { email: string; password: string },
-  meta?: { ip?: string }
-) {
-  const email = normalizeEmail(input.email)
-  if (!EMAIL_RE.test(email)) {
-    return { success: false as const, message: '请输入有效的邮箱地址。' }
+export async function consumeAdminMagicLink(rawToken: string, meta?: { ip?: string }) {
+  const tokenHash = hashMagicLinkToken(rawToken.trim())
+  const record = await prisma.adminMagicLinkToken.findUnique({
+    where: { tokenHash },
+    include: { admin: true }
+  })
+  if (!record || record.consumedAt || record.expiresAt < new Date()) {
+    return { success: false as const, message: '登录链接无效或已过期，请重新发送。' }
+  }
+  if (record.admin.status !== 'active') {
+    return { success: false as const, message: '管理员账号不可用。' }
   }
 
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) {
-    return { success: false as const, message: '账号不存在，请先注册。' }
-  }
-  if (user.status !== 'active') {
-    return { success: false as const, message: '账号已被禁用。' }
-  }
-  if (!(await verifyPassword(input.password, user.passwordHash))) {
-    await logUserLogin({ userId: user.id, email: user.email, ip: meta?.ip, success: false })
-    return { success: false as const, message: '邮箱或密码不正确。' }
+  const consumed = await prisma.adminMagicLinkToken.updateMany({
+    where: { id: record.id, consumedAt: null },
+    data: { consumedAt: new Date() }
+  })
+  if (consumed.count !== 1) {
+    return { success: false as const, message: '登录链接已使用，请重新发送。' }
   }
 
-  const touched = await prisma.user.update({
-    where: { id: user.id },
+  const admin = await prisma.adminUser.update({
+    where: { id: record.adminId },
     data: { lastLoginAt: new Date() }
   })
-  const updated = await resolveUserSubscription(touched)
-  await Promise.all([ensureQuota(updated), ensureChatQuota(updated)])
-  await logUserLogin({ userId: updated.id, email: updated.email, ip: meta?.ip })
-
-  return issueUserSession(updated)
-}
-
-export async function loginAdmin(
-  input: { email: string; password: string },
-  meta?: { ip?: string }
-) {
-  const email = normalizeEmail(input.email)
-  const admin = await prisma.adminUser.findUnique({ where: { email } })
-  if (!admin || admin.status !== 'active') {
-    return { success: false as const, message: '管理员账号或密码不正确。' }
-  }
-  if (!(await verifyPassword(input.password, admin.passwordHash))) {
-    return { success: false as const, message: '管理员账号或密码不正确。' }
-  }
-
-  await prisma.adminUser.update({
-    where: { id: admin.id },
-    data: { lastLoginAt: new Date() }
-  })
-
   await logAdminAction({
     adminId: admin.id,
     adminEmail: admin.email,
-    action: 'admin_login',
+    action: 'admin_magic_link_login',
     detail: meta?.ip ? `ip=${meta.ip}` : undefined
   })
-
-  const token = signToken({ sub: admin.id, role: 'admin', email: admin.email })
   return {
     success: true as const,
-    accessToken: token,
+    accessToken: signToken({ sub: admin.id, role: 'admin', email: admin.email }),
     admin: { id: admin.id, email: admin.email, role: admin.role }
   }
 }

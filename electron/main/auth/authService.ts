@@ -1,9 +1,7 @@
 import type {
   AuthActionResult,
   AuthState,
-  LoginInput,
-  MagicLinkRequestResult,
-  RegisterInput
+  MagicLinkRequestResult
 } from '../../../src/shared/types/auth'
 import { isRemoteBackendEnabled } from '../api/config'
 import { refreshAppStatus } from '../api/appStatus'
@@ -32,20 +30,12 @@ export function isAuthenticated(): boolean {
   return session !== null && session.mode === 'account'
 }
 
-export async function login(input: LoginInput): Promise<AuthActionResult> {
-  return remote.remoteLogin(input)
-}
-
 export async function requestMagicLink(email: string): Promise<MagicLinkRequestResult> {
   return remote.remoteRequestMagicLink(email)
 }
 
 export async function consumeMagicLink(token: string): Promise<AuthActionResult> {
   return remote.remoteConsumeMagicLink(token)
-}
-
-export async function register(input: RegisterInput): Promise<AuthActionResult> {
-  return remote.remoteRegister(input)
 }
 
 export async function logout(): Promise<AuthActionResult> {

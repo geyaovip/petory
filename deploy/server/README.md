@@ -55,6 +55,8 @@ Production health check: `https://api.petory.chat/health`.
 cd /home/ubuntu/apps/petory/current
 git pull --ff-only
 docker compose -f deploy/server/compose.yaml up -d --build
+docker compose -f deploy/server/compose.yaml exec -T api npx prisma db push
+curl http://127.0.0.1:8787/health
 ```
 
 ## Backup

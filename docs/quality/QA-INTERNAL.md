@@ -85,7 +85,7 @@ npm run qa                 # 发布资源检查（打包前）
 
 ## 管理后台
 
-- [ ] `/admin/` 登录 `admin@petory.app`
+- [ ] `/admin/` 使用 `geyaovip@163.com` 的 Magic Link 登录
 - [ ] 仪表盘有今日数据
 - [ ] 系统配置保存后客户端额度同步
 - [ ] 运营账号 `operator@petory.app` 无法写入

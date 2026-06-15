@@ -1,4 +1,5 @@
 import { config } from './config.js'
+import { randomBytes } from 'crypto'
 import { todayKey } from './lib/entitlements.js'
 import { prisma } from './lib/prisma.js'
 import { hashPassword } from './lib/password.js'
@@ -47,7 +48,6 @@ async function ensureUserQuotas(): Promise<void> {
 export async function seedAdmin(): Promise<void> {
   await seedSystemConfigDefaults()
 
-  const syncAdminPassword = process.env.ADMIN_SYNC_PASSWORD === 'true'
   const existingAdmin = await prisma.adminUser.findUnique({
     where: { email: config.adminEmail }
   })
@@ -55,21 +55,25 @@ export async function seedAdmin(): Promise<void> {
     await prisma.adminUser.create({
       data: {
         email: config.adminEmail,
-        passwordHash: await hashPassword(config.adminPassword),
+        passwordHash: await hashPassword(randomBytes(32).toString('hex')),
         role: 'admin'
       }
     })
     console.info(`[petory-server] seeded admin: ${config.adminEmail}`)
-  } else if (syncAdminPassword) {
+  } else if (existingAdmin.status !== 'active' || existingAdmin.role !== 'admin') {
     await prisma.adminUser.update({
-      where: { email: config.adminEmail },
-      data: {
-        passwordHash: await hashPassword(config.adminPassword),
-        status: 'active'
-      }
+      where: { id: existingAdmin.id },
+      data: { status: 'active', role: 'admin' }
     })
-    console.info(`[petory-server] synced admin password: ${config.adminEmail}`)
   }
+
+  await prisma.adminUser.updateMany({
+    where: {
+      role: 'admin',
+      email: { not: config.adminEmail }
+    },
+    data: { status: 'disabled' }
+  })
 
   const operator = await prisma.adminUser.findUnique({
     where: { email: config.operatorEmail }
@@ -78,7 +82,7 @@ export async function seedAdmin(): Promise<void> {
     await prisma.adminUser.create({
       data: {
         email: config.operatorEmail,
-        passwordHash: await hashPassword(config.operatorPassword),
+        passwordHash: await hashPassword(randomBytes(32).toString('hex')),
         role: 'operator'
       }
     })

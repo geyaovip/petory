@@ -7,12 +7,8 @@ import { MaintenanceNotice } from '../components/MaintenanceNotice'
 import { PageShell } from '../components/ui/PageShell'
 import { AUTH_COPY } from '@shared/copy/auth'
 
-type LoginMode = 'magic-link' | 'password'
-
 export function AuthPanel(): ReactElement {
-  const [mode, setMode] = useState<LoginMode>('magic-link')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [agreedLegal, setAgreedLegal] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
@@ -39,24 +35,12 @@ export function AuthPanel(): ReactElement {
     setLoading(true)
     try {
       await window.petory.legal.accept()
-      if (mode === 'magic-link') {
-        const result = await window.petory.auth.requestMagicLink(email)
-        if (result.success) setInfo(result.message || AUTH_COPY.magicLinkSent)
-        else setError(result.message)
-        return
-      }
-
-      const result = await window.petory.auth.login({ email, password })
-      if (!result.success) setError(result.message)
+      const result = await window.petory.auth.requestMagicLink(email)
+      if (result.success) setInfo(result.message || AUTH_COPY.magicLinkSent)
+      else setError(result.message)
     } finally {
       setLoading(false)
     }
-  }
-
-  const switchMode = (): void => {
-    setMode((current) => (current === 'magic-link' ? 'password' : 'magic-link'))
-    setError(null)
-    setInfo(null)
   }
 
   return (
@@ -65,9 +49,7 @@ export function AuthPanel(): ReactElement {
         <img src="/logo.png" alt="Petory" className="mb-7 h-12 w-auto" />
         <h1 className="text-[24px] font-semibold tracking-[-0.02em]">登录 Petory</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-petory-text-secondary">
-          {mode === 'magic-link'
-            ? AUTH_COPY.subtitleRemote
-            : '使用已有账号的邮箱和密码登录。'}
+          {AUTH_COPY.subtitleRemote}
         </p>
 
         {bootstrap?.maintenanceNotice ? (
@@ -91,21 +73,6 @@ export function AuthPanel(): ReactElement {
             />
           </label>
 
-          {mode === 'password' ? (
-            <label className="block text-[13px] font-medium text-petory-text-secondary">
-              {AUTH_COPY.passwordLabel}
-              <Input
-                type="password"
-                className="mt-2 bg-petory-surface"
-                placeholder={AUTH_COPY.passwordPlaceholder}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                minLength={6}
-              />
-            </label>
-          ) : null}
-
           {error ? (
             <p className="rounded-lg bg-petory-error-soft px-3 py-2 text-[12px] text-petory-error" role="alert">
               {error}
@@ -119,19 +86,9 @@ export function AuthPanel(): ReactElement {
           ) : null}
 
           <Button fullWidth disabled={loading} type="submit">
-            {loading
-              ? AUTH_COPY.loading
-              : mode === 'magic-link'
-                ? AUTH_COPY.sendMagicLink
-                : AUTH_COPY.login}
+            {loading ? AUTH_COPY.loading : AUTH_COPY.sendMagicLink}
           </Button>
         </form>
-
-        <div className="mt-3 text-center">
-          <LinkButton onClick={switchMode}>
-            {mode === 'magic-link' ? AUTH_COPY.passwordLogin : AUTH_COPY.magicLinkLogin}
-          </LinkButton>
-        </div>
 
         <label className="mt-5 flex items-start gap-2 text-[12px] leading-relaxed text-petory-text-secondary">
           <input
@@ -152,11 +109,9 @@ export function AuthPanel(): ReactElement {
           </span>
         </label>
 
-        {mode === 'magic-link' ? (
-          <p className="mt-4 text-center text-[11px] leading-relaxed text-petory-text-tertiary">
-            首次使用该邮箱时会自动创建免费账号，无需单独注册。
-          </p>
-        ) : null}
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-petory-text-tertiary">
+          首次使用该邮箱时会自动创建账号，无需密码或单独注册。
+        </p>
       </div>
     </PageShell>
   )

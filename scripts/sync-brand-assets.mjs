@@ -32,7 +32,7 @@ const sources = {
 
 /** Transparent margin for macOS Dock / installer only (layout, not edge cleanup). */
 const SCENE_INSET = {
-  favicon: 0.82,
+  favicon: 0.9,
   webAppleTouch: 1,
   macDockRuntime: 0.8,
   macInstaller: 0.8,
@@ -366,9 +366,23 @@ async function writeFaviconSet(source, outDir) {
   fs.mkdirSync(outDir, { recursive: true })
   for (const size of [16, 32, 48]) {
     const dest = path.join(outDir, `favicon-${size}.png`)
-    await writeAppIcon(source, dest, size, {
-      inset: size === 16 ? 0.72 : SCENE_INSET.favicon
-    })
+    const inner = Math.max(1, Math.round(size * SCENE_INSET.favicon))
+    const pad = size - inner
+    await sharp(source)
+      .resize(inner, inner, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+        kernel: sharp.kernel.lanczos3
+      })
+      .extend({
+        top: Math.floor(pad / 2),
+        bottom: pad - Math.floor(pad / 2),
+        left: Math.floor(pad / 2),
+        right: pad - Math.floor(pad / 2),
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      })
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toFile(dest)
     console.log(`✓ ${path.relative(root, dest)}`)
   }
   const appleTouch = path.join(outDir, 'apple-touch-icon.png')
@@ -393,8 +407,11 @@ fs.mkdirSync(brandDir, { recursive: true })
 await writeWordmark(sources.wordmark, path.join(brandDir, 'logo.png'))
 
 const appIconSquared = await squaredAppIcon(await loadAppIconSource(sources.appIcon))
+const faviconSquared = await squaredAppIcon(
+  await fs.promises.readFile(path.join(srcDir, sources.appIcon))
+)
 
-await writeFaviconSet(appIconSquared, brandDir)
+await writeFaviconSet(faviconSquared, brandDir)
 
 const iconPng = path.join(brandDir, 'icon.png')
 await writeAppIcon(appIconSquared, iconPng, 1024, { inset: SCENE_INSET.brandArchive })

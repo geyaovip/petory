@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Petory 管理后台</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=11" />
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=11" />
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=11" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=12" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=12" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=12" />
     <link rel="stylesheet" href="admin.css" />
     <script src="admin-labels.js"></script>
   </head>
@@ -15,19 +15,16 @@
       <div class="login-card">
         <img class="brand-logo" src="logo.png?v=10" alt="Petory" />
         <h1>管理后台</h1>
-        <p class="muted">登录以管理用户、生成任务与系统配置</p>
+        <p class="muted">输入已授权的管理员邮箱，我们会发送一次性登录链接。</p>
         <label class="field" style="margin-top: 20px">
           <span>邮箱</span>
-          <input id="adminEmail" type="email" placeholder="admin@petory.app" />
-        </label>
-        <label class="field">
-          <span>密码</span>
-          <input id="adminPassword" type="password" placeholder="密码" />
+          <input id="adminEmail" type="email" placeholder="name@example.com" autocomplete="email" />
         </label>
         <div class="row">
-          <button id="loginBtn" class="primary" type="button">登录</button>
+          <button id="loginBtn" class="primary" type="button">发送登录链接</button>
         </div>
         <p id="loginErr" class="err hidden"></p>
+        <p id="loginInfo" class="muted hidden" style="margin-top: 12px"></p>
       </div>
     </div>
 
@@ -264,6 +261,7 @@
         document.getElementById('appShell').classList.add('hidden')
         document.getElementById('loginScreen').classList.remove('hidden')
         const err = document.getElementById('loginErr')
+        document.getElementById('loginInfo').classList.add('hidden')
         if (message) {
           err.textContent = message
           err.classList.remove('hidden')
@@ -719,36 +717,36 @@
 
       async function submitLogin() {
         const email = document.getElementById('adminEmail').value.trim()
-        const password = document.getElementById('adminPassword').value
         const loginBtn = document.getElementById('loginBtn')
-        if (!email || !password) {
-          showLogin('请填写邮箱和密码。')
+        const err = document.getElementById('loginErr')
+        const info = document.getElementById('loginInfo')
+        err.classList.add('hidden')
+        info.classList.add('hidden')
+        if (!email) {
+          showLogin('请输入管理员邮箱。')
           return
         }
         loginBtn.disabled = true
-        loginBtn.textContent = '登录中…'
+        loginBtn.textContent = '发送中…'
         try {
-          const data = await api('/api/admin/login', {
+          const data = await api('/api/admin/magic-link', {
             method: 'POST',
             skipAuth: true,
-            json: { email, password }
+            json: { email }
           })
-          if (!data.success || !data.accessToken) throw new Error(data.message || '登录失败')
-          setToken(data.accessToken)
-          showApp()
-          await bootstrapApp()
+          if (!data.success) throw new Error(data.message || '发送失败')
+          info.textContent = data.message || '登录链接已发送，请查收邮件。'
+          info.classList.remove('hidden')
         } catch (e) {
-          showLogin(e.message || '登录失败，请重试。')
+          err.textContent = e.message || '发送失败，请稍后重试。'
+          err.classList.remove('hidden')
         } finally {
           loginBtn.disabled = false
-          loginBtn.textContent = '登录'
+          loginBtn.textContent = '发送登录链接'
         }
       }
 
       document.getElementById('loginBtn').onclick = () => submitLogin()
-      document.getElementById('adminPassword').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submitLogin()
-      })
       document.getElementById('adminEmail').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') submitLogin()
       })

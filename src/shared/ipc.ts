@@ -106,8 +106,6 @@ export const IPC = {
   auth: {
     getState: 'petory:auth:getState',
     requestMagicLink: 'petory:auth:requestMagicLink',
-    login: 'petory:auth:login',
-    register: 'petory:auth:register',
     logout: 'petory:auth:logout',
     refresh: 'petory:auth:refresh',
     stateChanged: 'petory:auth:stateChanged',

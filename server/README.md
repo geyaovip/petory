@@ -36,17 +36,15 @@ npm run dev
 - API：`http://localhost:8787`
 - 健康检查：`GET /health`
 - 管理后台：`http://localhost:8787/admin/`
-- 默认管理员：`admin@petory.app` / `petory-admin`（见 `.env`）
-- 只读运营：`operator@petory.app` / `petory-operator`
+- 管理员：`geyaovip@163.com`，通过一次性邮箱链接登录
+- 只读运营：由 `OPERATOR_EMAIL` 配置，同样通过一次性邮箱链接登录
 
 停止数据库：`npm run db:down`（在 `server/` 目录）
 
-## 用户 API（假登录）
+## 用户 API
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/auth/register` | 注册 `{ email, password, displayName? }` |
-| POST | `/api/auth/login` | 登录 |
 | POST | `/api/auth/magic-link` | 发送一次性登录邮件 `{ email }` |
 | POST | `/api/auth/callback` | 使用一次性令牌换取登录态 `{ token }` |
 | GET | `/api/me` | 当前用户 + 额度（Bearer token） |
@@ -66,7 +64,8 @@ npm run dev
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/admin/login` | 管理员登录 |
+| POST | `/api/admin/magic-link` | 向已授权管理员邮箱发送一次性登录链接 |
+| POST | `/api/admin/auth/callback` | 使用管理员一次性令牌换取登录态 |
 | GET | `/api/admin/dashboard` | 增强概览（7 日趋势、失败分布） |
 | GET/PATCH | `/api/admin/system/config` | 系统配置 |
 | GET | `/api/admin/devices` | 设备列表 |

@@ -1,9 +1,7 @@
 import type {
   AuthActionResult,
   AuthSession,
-  LoginInput,
-  MagicLinkRequestResult,
-  RegisterInput
+  MagicLinkRequestResult
 } from '../../../src/shared/types/auth'
 import type { ServerAuthUser } from '../../../src/shared/types/api'
 import { apiFetch } from '../api/client'
@@ -22,11 +20,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 function validateEmail(email: string): string | null {
   const normalized = email.trim().toLowerCase()
   if (!EMAIL_RE.test(normalized)) return '请输入有效的邮箱地址。'
-  return null
-}
-
-function validatePassword(password: string): string | null {
-  if (password.length < 6) return '密码至少 6 位。'
   return null
 }
 
@@ -96,35 +89,6 @@ async function afterAuth(
   return success()
 }
 
-export async function remoteLogin(input: LoginInput): Promise<AuthActionResult> {
-  const emailError = validateEmail(input.email)
-  if (emailError) return failure(emailError)
-  const passwordError = validatePassword(input.password)
-  if (passwordError) return failure(passwordError)
-
-  try {
-    const result = await apiFetch<{
-      success: boolean
-      accessToken?: string
-      user?: ServerAuthUser
-      message?: string
-    }>('/api/auth/login', {
-      method: 'POST',
-      auth: false,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: input.email, password: input.password })
-    })
-
-    if (!result.success || !result.accessToken || !result.user) {
-      return failure(result.message || '登录失败。')
-    }
-
-    return afterAuth(result.user, result.accessToken)
-  } catch (error) {
-    return failure(error instanceof Error ? error.message : '无法连接后台服务。')
-  }
-}
-
 export async function remoteRequestMagicLink(email: string): Promise<MagicLinkRequestResult> {
   const emailError = validateEmail(email)
   if (emailError) return { success: false, message: emailError }
@@ -165,35 +129,6 @@ export async function remoteConsumeMagicLink(token: string): Promise<AuthActionR
     return afterAuth(result.user, result.accessToken)
   } catch (error) {
     return failure(error instanceof Error ? error.message : '登录失败，请重新发送链接。')
-  }
-}
-
-export async function remoteRegister(input: RegisterInput): Promise<AuthActionResult> {
-  const emailError = validateEmail(input.email)
-  if (emailError) return failure(emailError)
-  const passwordError = validatePassword(input.password)
-  if (passwordError) return failure(passwordError)
-
-  try {
-    const result = await apiFetch<{
-      success: boolean
-      accessToken?: string
-      user?: ServerAuthUser
-      message?: string
-    }>('/api/auth/register', {
-      method: 'POST',
-      auth: false,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input)
-    })
-
-    if (!result.success || !result.accessToken || !result.user) {
-      return failure(result.message || '注册失败。')
-    }
-
-    return afterAuth(result.user, result.accessToken)
-  } catch (error) {
-    return failure(error instanceof Error ? error.message : '无法连接后台服务。')
   }
 }
 

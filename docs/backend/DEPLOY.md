@@ -23,11 +23,11 @@ PUBLIC_BASE_URL=https://api.your-domain.com
 MINIMAX_API_KEY=...
 KIMI_API_KEY=...
 
-# 管理员种子（首次启动）
-ADMIN_EMAIL=admin@petory.app
-ADMIN_PASSWORD=<强密码>
+# 管理员邮箱白名单（首次启动）
+ADMIN_EMAIL=geyaovip@163.com
 OPERATOR_EMAIL=operator@petory.app
-OPERATOR_PASSWORD=<强密码>
+RESEND_API_KEY=<Resend API Key>
+MAIL_FROM=Petory <noreply@petory.chat>
 
 PORT=8787
 ```

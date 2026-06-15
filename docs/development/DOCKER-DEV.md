@@ -46,19 +46,17 @@ npm run server:dev     # 保持运行，不要关
 ```
 
 浏览器打开：http://localhost:8787/admin/  
-默认账号：`admin@petory.app` / `petory-admin`
+输入 `server/.env` 中配置的 `ADMIN_EMAIL`，通过邮箱中的一次性链接登录。
 
-若提示「账号或密码不正确」，或页面空白没有登录框，执行：
+若页面空白没有登录框，执行：
 
 ```bash
 # 浏览器控制台清除旧 token（或点页面上的「退出」）
 localStorage.removeItem('petory_admin_token')
 
-# 按 server/.env 重置管理员密码
-npm run server:admin:reset
 ```
 
-然后硬刷新页面（Cmd+Shift+R）再登录。
+然后硬刷新页面（Cmd+Shift+R）并重新发送登录链接。
 
 验证 API 是否起来：
 

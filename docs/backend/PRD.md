@@ -55,7 +55,7 @@ Petory API Server
 
 | # | 模块 | MVP (B1.0) | 后续 |
 |---|------|------------|------|
-| 1 | 用户系统 | 邮箱验证码登录、JWT | 密码登录、OAuth |
+| 1 | 用户系统 | 邮箱 Magic Link 登录、JWT | OAuth |
 | 2 | 设备系统 | 登记设备、弱绑定 | 设备数限制 |
 | 3 | 生成额度 | 日额度、扣减规则 | 赠送额度、管理员调整 |
 | 4 | 对话额度 | — | B1.2 Kimi 代理后启用 |
@@ -264,8 +264,8 @@ MVP 仅 `admin`；后续 `super_admin` / `operation` / `support` / `finance`。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/auth/register` | 假登录注册（B1.0 ✅） |
-| POST | `/api/auth/login` | 假登录（B1.0 ✅） |
+| POST | `/api/auth/magic-link` | 发送用户 Magic Link |
+| GET | `/api/auth/magic-link/verify` | 验证 Magic Link 并签发登录 token |
 | POST | `/api/auth/refresh` | 刷新 token（后续） |
 | POST | `/api/auth/logout` | 退出（后续） |
 | GET | `/api/me` | 当前用户 + 权益摘要 |

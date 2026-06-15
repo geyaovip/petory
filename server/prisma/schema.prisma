@@ -240,4 +240,19 @@ model AdminUser {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   lastLoginAt  DateTime?
+  magicLinkTokens AdminMagicLinkToken[]
+}
+
+model AdminMagicLinkToken {
+  id         String    @id @default(uuid())
+  adminId    String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([expiresAt])
 }

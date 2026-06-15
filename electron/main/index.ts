@@ -28,11 +28,9 @@ import {
   rejectLegacyOfflineSession,
   getAuthState,
   isAuthenticated,
-  login,
   requestMagicLink,
   consumeMagicLink,
-  logout,
-  register
+  logout
 } from './auth'
 import { applyUserSettings, persistAndApply } from './applySettings'
 import {
@@ -107,7 +105,6 @@ import {
   openSettingsWindow,
   showPetWindowAfterCreation
 } from './windows'
-import type { LoginInput, RegisterInput } from '../../src/shared/types/auth'
 import type { OnboardingIntent } from '../../src/shared/types/onboarding'
 import type { ChatSettings } from '../../src/shared/types/chat'
 import type { UserSettings } from '../../src/shared/types/settings'
@@ -646,24 +643,6 @@ function registerIpc(): void {
     const state = await refreshAuthState()
     broadcastAuthStateChanged()
     return state
-  })
-
-  ipcMain.handle(IPC.auth.login, async (_event, input: LoginInput) => {
-    const result = await login(input)
-    if (result.success) {
-      broadcastAuthStateChanged()
-      enterAppAfterAuth()
-    }
-    return result
-  })
-
-  ipcMain.handle(IPC.auth.register, async (_event, input: RegisterInput) => {
-    const result = await register(input)
-    if (result.success) {
-      broadcastAuthStateChanged()
-      enterAppAfterAuth()
-    }
-    return result
   })
 
   ipcMain.handle(IPC.auth.logout, async () => {

@@ -2,9 +2,7 @@ import type { MenuAction, PetDisplaySettings, UploadPayload, WindowPosition } fr
 import type {
   AuthActionResult,
   AuthState,
-  LoginInput,
-  MagicLinkRequestResult,
-  RegisterInput
+  MagicLinkRequestResult
 } from '@shared/types/auth'
 import type { ChatMessage, ChatSettings, SendChatResponse } from '@shared/types/chat'
 import type { BubblePayload, GrowthStats, PetVisualState } from '@shared/types/growth'
@@ -154,8 +152,6 @@ export interface PetoryAPI {
   auth: {
     getState: () => Promise<AuthState>
     requestMagicLink: (email: string) => Promise<MagicLinkRequestResult>
-    login: (input: LoginInput) => Promise<AuthActionResult>
-    register: (input: RegisterInput) => Promise<AuthActionResult>
     logout: () => Promise<AuthActionResult>
     refresh: () => Promise<AuthState>
     onStateChanged: (callback: (state: AuthState) => void) => () => void

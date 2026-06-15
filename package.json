@@ -39,8 +39,7 @@
     "server:install": "npm install --prefix server",
     "server:dev": "npm run dev --prefix server",
     "server:db:up": "npm run db:up --prefix server",
-    "server:db": "npm run db:push --prefix server",
-    "server:admin:reset": "npm run admin:reset --prefix server"
+    "server:db": "npm run db:push --prefix server"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

@@ -2,12 +2,10 @@ export {
   rejectLegacyOfflineSession,
   getAuthState,
   isAuthenticated,
-  login,
   requestMagicLink,
   consumeMagicLink,
   logout,
   redeemCode,
-  register,
   clearAuthData,
   bootstrapRemoteSession,
   refreshAuthState
