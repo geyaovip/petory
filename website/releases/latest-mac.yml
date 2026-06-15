@@ -1,8 +1,8 @@
-version: 2.4.8
+version: 2.4.10
 files:
-  - url: https://github.com/geyaovip/petory/releases/download/v2.4.8/Petory-2.4.8-universal.dmg
-    sha512: NGA6V3qK+pcdALNUE2j+Z63Uxyg8N2HFjMM8K1tIVF0Q3w3VYc86KYr2ulk1rF2pr4sK7XJNYNaMphrN0B+y1Q==
-    size: 197699264
-path: https://github.com/geyaovip/petory/releases/download/v2.4.8/Petory-2.4.8-universal.dmg
-sha512: NGA6V3qK+pcdALNUE2j+Z63Uxyg8N2HFjMM8K1tIVF0Q3w3VYc86KYr2ulk1rF2pr4sK7XJNYNaMphrN0B+y1Q==
-releaseDate: '2026-06-15T10:47:47.461Z'
+  - url: https://github.com/geyaovip/petory/releases/download/v2.4.10/Petory-2.4.10-universal.dmg
+    sha512: Ncwif1zi3Se1nop0Fd+X0VOY8zItWrUCSAMThSvCZmIEl/S2BOZUuIfUQpZCPZPPISV8qDeN61w5N7fHstPfyQ==
+    size: 197680216
+path: https://github.com/geyaovip/petory/releases/download/v2.4.10/Petory-2.4.10-universal.dmg
+sha512: Ncwif1zi3Se1nop0Fd+X0VOY8zItWrUCSAMThSvCZmIEl/S2BOZUuIfUQpZCPZPPISV8qDeN61w5N7fHstPfyQ==
+releaseDate: '2026-06-15T11:20:03.324Z'
