@@ -51,7 +51,7 @@ export async function prepareReferenceFromPath(
     buffer = await sharp(fs.readFileSync(filePath)).rotate().png().toBuffer()
     mimeType = 'image/png'
   } else {
-    buffer = await sharp(fs.readFileSync(filePath)).rotate().jpeg({ quality: 95 }).toBuffer()
+    buffer = await sharp(fs.readFileSync(filePath)).rotate().jpeg({ quality: 98 }).toBuffer()
     mimeType = 'image/jpeg'
   }
 

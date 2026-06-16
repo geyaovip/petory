@@ -1,5 +1,6 @@
 import fs from 'fs'
 import type { ReferenceMode } from '../../../src/shared/generation/reference.js'
+import { shouldAttachPoseReference } from '../../../src/shared/generation/poseReference.js'
 import { getStylePrompt } from '../../../src/shared/prompts/stylePrompts.js'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js'
 import { config } from '../config.js'
@@ -44,7 +45,8 @@ export async function generateImage(
   if (!config.arkApiKey) throw new Error('IMAGE_NOT_CONFIGURED')
 
   const referenceMode = options.referenceMode ?? 'upload'
-  const poseReferencePath = getSamplePoseReferencePath(pose)
+  const usePoseReference = shouldAttachPoseReference(referenceMode, pose)
+  const poseReferencePath = usePoseReference ? getSamplePoseReferencePath(pose) : null
   const poseReferenceDataUrl = poseReferencePath
     ? toDataUrl(fs.readFileSync(poseReferencePath), 'image/png')
     : undefined

@@ -1,5 +1,6 @@
 import fs from 'fs'
 import type { ReferenceMode } from '../../../src/shared/generation/reference'
+import { shouldAttachPoseReference } from '../../../src/shared/generation/poseReference'
 import { getStylePrompt } from '../../../src/shared/prompts/stylePrompts'
 import type { PetVisualState } from '../../../src/shared/types/growth'
 import type { PetStyleType } from '../../../src/shared/types/pet'
@@ -50,7 +51,8 @@ export async function generatePetImage(
   const referenceMode = options.referenceMode ?? 'upload'
   const prepared = await prepareReferenceFromPath(referencePath, referenceMode)
   const identityDataUrl = toDataUrl(prepared.buffer, prepared.mimeType)
-  const poseReferencePath = getSamplePoseReferencePath(pose)
+  const usePoseReference = shouldAttachPoseReference(referenceMode, pose)
+  const poseReferencePath = usePoseReference ? getSamplePoseReferencePath(pose) : null
   const poseReferenceDataUrl = poseReferencePath
     ? toDataUrl(fs.readFileSync(poseReferencePath), 'image/png')
     : undefined
