@@ -345,9 +345,18 @@
             const raw = cfg[cfgKey]
             const label = maps.CONFIG_LABEL[f.key] || f.key
             const hint = maps.CONFIG_HINT[f.key]
-            const hintHtml = hint ? `<span class="field-hint">${esc(hint)}</span>` : ''
+            const hintHtml = hint
+              ? `<button type="button" class="config-help-btn" aria-label="说明" data-help="${esc(f.key)}">?</button>
+                 <span class="config-help-popover hidden" data-help-popover="${esc(f.key)}">${esc(hint)}</span>`
+              : ''
             const val = f.transform === 'msToSec' ? Math.round(Number(raw || 0) / 1000) : raw
-            return `<label class="config-number-field"><span class="config-field-label">${esc(label)}</span>${hintHtml}<input data-cfg="${cfgKey}" data-transform="${f.transform || ''}" type="number" min="0" value="${val ?? ''}" ${canWrite ? '' : 'disabled'} /></label>`
+            return `<label class="config-number-field">
+              <span class="config-label-row">
+                <span class="config-field-label">${esc(label)}</span>
+                ${hintHtml}
+              </span>
+              <input data-cfg="${cfgKey}" data-transform="${f.transform || ''}" type="number" min="0" value="${val ?? ''}" ${canWrite ? '' : 'disabled'} />
+            </label>`
         }
 
         const renderSwitch = (f) => {
@@ -391,6 +400,18 @@
               <textarea data-cfg="maintenanceNotice" placeholder="例如：系统将在今晚 23:00 进行短暂维护。" ${canWrite ? '' : 'disabled'}>${esc(cfg.maintenanceNotice || '')}</textarea>
             </label>
           </section>`
+
+        document.querySelectorAll('.config-help-btn').forEach((btn) => {
+          btn.addEventListener('click', (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            const key = btn.getAttribute('data-help')
+            if (!key) return
+            const popover = document.querySelector(`[data-help-popover="${key}"]`)
+            if (!popover) return
+            popover.classList.toggle('hidden')
+          })
+        })
       }
 
       async function loadOverview() {

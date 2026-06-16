@@ -320,6 +320,49 @@ body {
   margin-bottom: 6px;
 }
 
+.config-label-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.config-help-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.config-help-btn:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+  background: #fdfcfb;
+}
+
+.config-help-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
 .field-hint {
   color: var(--text-tertiary);
   font-size: 11px;
