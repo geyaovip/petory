@@ -307,7 +307,11 @@ export function SettingsPanel(): ReactElement {
                   <Button
                     size="sm"
                     variant="secondary"
-                    disabled={updateState?.status === 'checking' || updateState?.status === 'downloading'}
+                    disabled={
+                      updateState?.status === 'checking' ||
+                      updateState?.status === 'downloading' ||
+                      updateState?.status === 'ready'
+                    }
                     onClick={() => void window.petory.update.check()}
                   >
                     {updateState?.status === 'checking' ? '检查中…' : '检查更新'}

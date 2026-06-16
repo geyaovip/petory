@@ -19,12 +19,20 @@ function broadcast(): void {
   }
 }
 
+function isUpdateLocked(): boolean {
+  return state.status === 'ready' || state.status === 'downloading'
+}
+
+function invalidateChecks(): void {
+  checkSeq += 1
+}
+
 export function getUpdateState(): UpdateState {
   return { ...state }
 }
 
 function applyCheckResult(result: Awaited<ReturnType<typeof autoUpdater.checkForUpdates>>): void {
-  if (!result) return
+  if (!result || isUpdateLocked()) return
 
   if (result.isUpdateAvailable) {
     state = { status: 'available', version: result.updateInfo.version }
@@ -51,6 +59,7 @@ export function initAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('error', (error) => {
+    if (isUpdateLocked()) return
     state = {
       status: 'error',
       message: error.message || '更新检查失败'
@@ -68,12 +77,16 @@ export function initAutoUpdater(): void {
   })
 
   autoUpdater.on('update-downloaded', (info) => {
+    invalidateChecks()
+    pendingCheck = null
     state = { status: 'ready', version: info.version, message: '更新已下载，可立即安装' }
     broadcast()
   })
 
   setTimeout(() => {
-    void checkForUpdates()
+    if (state.status === 'idle') {
+      void checkForUpdates()
+    }
   }, 8000)
 }
 
@@ -83,16 +96,20 @@ async function runCheckForUpdates(): Promise<UpdateState> {
     return state
   }
 
+  if (isUpdateLocked()) {
+    return getUpdateState()
+  }
+
   const seq = ++checkSeq
   state = { status: 'checking' }
   broadcast()
 
   try {
     const result = await autoUpdater.checkForUpdates()
-    if (seq !== checkSeq) return getUpdateState()
+    if (seq !== checkSeq || isUpdateLocked()) return getUpdateState()
     applyCheckResult(result)
   } catch (error) {
-    if (seq !== checkSeq) return getUpdateState()
+    if (seq !== checkSeq || isUpdateLocked()) return getUpdateState()
     state = {
       status: 'error',
       message: error instanceof Error ? error.message : '检查更新失败'
@@ -104,6 +121,10 @@ async function runCheckForUpdates(): Promise<UpdateState> {
 }
 
 export function checkForUpdates(): Promise<UpdateState> {
+  if (isUpdateLocked()) {
+    return Promise.resolve(getUpdateState())
+  }
+
   if (!pendingCheck) {
     pendingCheck = runCheckForUpdates().finally(() => {
       pendingCheck = null
@@ -120,6 +141,9 @@ export async function downloadUpdate(): Promise<UpdateState> {
   if (state.status !== 'available') {
     return getUpdateState()
   }
+
+  invalidateChecks()
+  pendingCheck = null
 
   state = { status: 'downloading', version: state.version, progress: 0 }
   broadcast()
