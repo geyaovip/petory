@@ -236,10 +236,14 @@ function sendMenuAction(action: MenuAction): void {
 
 function readImageDataUrl(filePath: string): string | null {
   if (!filePath || !fs.existsSync(filePath)) return null
-  const buf = fs.readFileSync(filePath)
-  const ext = path.extname(filePath).toLowerCase()
-  const mime = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png'
-  return `data:${mime};base64,${buf.toString('base64')}`
+  try {
+    const buf = fs.readFileSync(filePath)
+    const ext = path.extname(filePath).toLowerCase()
+    const mime = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png'
+    return `data:${mime};base64,${buf.toString('base64')}`
+  } catch {
+    return null
+  }
 }
 
 function registerIpc(): void {

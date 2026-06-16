@@ -1,6 +1,6 @@
 {
   "name": "petory",
-  "version": "2.4.13",
+  "version": "2.4.14",
   "description": "Upload a photo — let it move into your computer.",
   "author": "Petory",
   "main": "./out/main/index.js",

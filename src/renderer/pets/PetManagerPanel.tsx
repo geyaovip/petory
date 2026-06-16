@@ -31,22 +31,34 @@ export function PetManagerPanel(): ReactElement {
   } | null>(null)
 
   const load = useCallback(async () => {
-    const [list, nextDesktopStatus] = await Promise.all([window.petory.pets.list(), window.petory.desktop.getStatus()])
-    setPets(list)
-    setDesktopStatus(nextDesktopStatus)
-    setSelectedPetId((current) => {
-      if (current && list.some((pet) => pet.id === current)) return current
-      return list.find((pet) => pet.isActive)?.id ?? list[0]?.id ?? null
-    })
-    const nextPreviews: Record<string, string> = {}
-    await Promise.all(
-      list.map(async (pet) => {
-        const image = await window.petory.pet.getPreviewImage(pet.id)
-        if (image) nextPreviews[pet.id] = image
+    try {
+      const [list, nextDesktopStatus] = await Promise.all([
+        window.petory.pets.list(),
+        window.petory.desktop.getStatus()
+      ])
+      setPets(list)
+      setDesktopStatus(nextDesktopStatus)
+      setSelectedPetId((current) => {
+        if (current && list.some((pet) => pet.id === current)) return current
+        return list.find((pet) => pet.isActive)?.id ?? list[0]?.id ?? null
       })
-    )
-    setPreviews(nextPreviews)
-    setLoading(false)
+      setLoading(false)
+
+      const nextPreviews: Record<string, string> = {}
+      await Promise.all(
+        list.map(async (pet) => {
+          try {
+            const image = await window.petory.pet.getPreviewImage(pet.id)
+            if (image) nextPreviews[pet.id] = image
+          } catch {
+            // Preview may fail while poses are still being written.
+          }
+        })
+      )
+      setPreviews(nextPreviews)
+    } catch {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {

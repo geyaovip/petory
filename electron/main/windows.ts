@@ -98,6 +98,13 @@ function panelPosition(
   return { x: x + offsetX, y: y + offsetY }
 }
 
+function presentPanelWindow(win: BrowserWindow): void {
+  if (win.isDestroyed()) return
+  if (win.isMinimized()) win.restore()
+  if (!win.isVisible()) win.show()
+  win.focus()
+}
+
 function createPanelWindow(
   ref: { current: BrowserWindow | null },
   mode: PanelMode,
@@ -106,7 +113,7 @@ function createPanelWindow(
   offset: { x: number; y: number }
 ): BrowserWindow {
   if (ref.current && !ref.current.isDestroyed()) {
-    ref.current.focus()
+    presentPanelWindow(ref.current)
     return ref.current
   }
 
@@ -313,7 +320,7 @@ export function createPetWindow(): BrowserWindow {
 
 export function createOnboardingWindow(): BrowserWindow {
   if (onboardingWindow && !onboardingWindow.isDestroyed()) {
-    onboardingWindow.focus()
+    presentPanelWindow(onboardingWindow)
     return onboardingWindow
   }
 
@@ -355,7 +362,7 @@ export function openOnboardingWindow(): BrowserWindow {
 
 export function createAuthWindow(): BrowserWindow {
   if (authWindow && !authWindow.isDestroyed()) {
-    authWindow.focus()
+    presentPanelWindow(authWindow)
     return authWindow
   }
 
@@ -471,8 +478,16 @@ export function closeSettingsWindow(): void {
 }
 
 export function openPetsWindow(): void {
+  if (petsWindow?.isDestroyed()) {
+    petsWindow = null
+  }
+  if (petsWindow) {
+    presentPanelWindow(petsWindow)
+    broadcastPetsListChanged()
+    return
+  }
+
   const holder = { current: petsWindow }
-  const hadWindow = Boolean(petsWindow && !petsWindow.isDestroyed())
   petsWindow = createPanelWindow(
     holder,
     'pets',
@@ -480,9 +495,9 @@ export function openPetsWindow(): void {
     'Petory — Pets',
     { x: 60, y: 60 }
   )
-  if (hadWindow) {
-    broadcastPetsListChanged()
-  }
+  petsWindow.on('closed', () => {
+    petsWindow = null
+  })
 }
 
 export function closePetsWindow(): void {
