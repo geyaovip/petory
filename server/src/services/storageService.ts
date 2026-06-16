@@ -3,6 +3,13 @@ import path from 'path'
 import { config } from '../config.js'
 import type { PetPoseType } from '../../../src/shared/types/pet.js'
 
+function uniqueSuffix(): string {
+  // 12-char base36 timestamp+random, stable enough for cache-busting filenames.
+  const time = Date.now().toString(36)
+  const rand = Math.random().toString(36).slice(2, 8)
+  return `${time}${rand}`.slice(0, 12)
+}
+
 export function ensureUploadsDir(): void {
   fs.mkdirSync(config.uploadsDir, { recursive: true })
 }
@@ -38,7 +45,7 @@ export function saveBatchPoseOutput(
   buffer: Buffer
 ): string {
   const dir = batchDir(userId, batchId)
-  const filePath = path.join(dir, `pose-${pose}.png`)
+  const filePath = path.join(dir, `pose-${pose}-${uniqueSuffix()}.png`)
   fs.writeFileSync(filePath, buffer)
   return filePath
 }
