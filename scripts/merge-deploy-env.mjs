@@ -21,10 +21,21 @@ const MERGE_KEYS = [
   'KIMI_API_KEY',
   'KIMI_API_BASE',
   'KIMI_MODEL',
-  'PUBLIC_BASE_URL',
   'ADMIN_EMAIL',
   'OPERATOR_EMAIL'
 ]
+
+const PRODUCTION_PUBLIC_BASE_URL = 'https://api.petory.chat'
+
+function isLocalBaseUrl(value) {
+  if (!value) return true
+  try {
+    const host = new URL(value).hostname
+    return host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0'
+  } catch {
+    return true
+  }
+}
 
 function parseEnv(text) {
   const map = new Map()
@@ -104,6 +115,15 @@ for (const key of MERGE_KEYS) {
   merged += 1
 }
 
+const templateMap = parseEnv(template)
+const prodPublicUrl = templateMap.get('PUBLIC_BASE_URL') || PRODUCTION_PUBLIC_BASE_URL
+if (isLocalBaseUrl(target.get('PUBLIC_BASE_URL'))) {
+  if (target.get('PUBLIC_BASE_URL') !== prodPublicUrl) {
+    target.set('PUBLIC_BASE_URL', prodPublicUrl)
+    merged += 1
+  }
+}
+
 const preserved = ['POSTGRES_PASSWORD', 'JWT_SECRET'].filter(
   (key) => target.has(key) && target.get(key) && !source.has(key)
 )
@@ -122,6 +142,13 @@ if (!ark) {
   console.warn('⚠ ARK_API_KEY is still empty — image generation will fail until you set it in server/.env')
 } else {
   console.log(`✓ ARK_API_KEY present (${ark.length} chars)`)
+}
+
+const publicUrl = target.get('PUBLIC_BASE_URL')
+if (isLocalBaseUrl(publicUrl)) {
+  console.warn('⚠ PUBLIC_BASE_URL is still localhost — magic-link emails will be broken')
+} else {
+  console.log(`✓ PUBLIC_BASE_URL → ${publicUrl}`)
 }
 
 console.log('\nNext: npm run deploy:server')
