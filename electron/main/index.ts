@@ -6,7 +6,7 @@ import path from 'path'
 import { startPetCursorProbe } from './cursorProbe'
 import { loadDockIcon } from './appIcon'
 import { ERROR_MESSAGES } from '../../src/shared/constants'
-import { IPC, type MenuAction, type UploadPayload, type WindowPosition } from '../../src/shared/ipc'
+import { IPC, type UploadPayload, type WindowPosition } from '../../src/shared/ipc'
 import type { PetVisualState } from '../../src/shared/types/growth'
 import type { PomodoroStartInput } from '../../src/shared/types/pomodoro'
 import type { FinalizePetInput, PetPersonality, PetPoseType } from '../../src/shared/types/pet'
@@ -237,10 +237,23 @@ async function handleAuthDeepLink(rawUrl: string): Promise<void> {
   }
 }
 
-function buildContextMenu(): Menu {
+function buildContextMenu(petId: string | null): Menu {
   const focusActive = getPomodoroState().phase !== 'idle'
   return Menu.buildFromTemplate([
-    { label: '和它说话', click: () => openChatWindow() },
+    {
+      label: '和它说话',
+      click: () => {
+        if (petId) {
+          try {
+            activatePet(petId)
+            syncAllDesktopPets()
+          } catch {
+            // If the pet can't be activated, fall back to current primary.
+          }
+        }
+        openChatWindow()
+      }
+    },
     {
       label: focusActive ? '查看专注' : '开始专注',
       click: () => openPomodoroWindow()
@@ -248,15 +261,30 @@ function buildContextMenu(): Menu {
     { label: '查看成长', click: () => openGrowthWindow() },
     { type: 'separator' },
     { label: '宠物管理', click: () => openPetsWindow() },
-    { label: '设置', click: () => openSettingsWindow() },
-    { label: '隐藏桌宠', click: () => sendMenuAction('hide') },
+    {
+      label: '设置',
+      click: () => {
+        if (petId) {
+          try {
+            activatePet(petId)
+            syncAllDesktopPets()
+          } catch {
+            // ignore
+          }
+        }
+        openSettingsWindow()
+      }
+    },
+    {
+      label: '隐藏桌宠',
+      click: () => {
+        if (petId) hidePetFromDesktop(petId)
+        else getPetWindow()?.hide()
+      }
+    },
     { type: 'separator' },
-    { label: '退出 Petory', click: () => sendMenuAction('quit') }
+    { label: '退出 Petory', click: () => app.quit() }
   ])
-}
-
-function sendMenuAction(action: MenuAction): void {
-  getPetWindow()?.webContents.send(IPC.menu.action, action)
 }
 
 function readImageDataUrl(filePath: string): string | null {
@@ -331,7 +359,7 @@ function registerIpc(): void {
   ipcMain.on(IPC.window.showContextMenu, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win || !isPetWindow(win)) return
-    buildContextMenu().popup({ window: win })
+    buildContextMenu(getPetIdForWindow(win)).popup({ window: win })
   })
 
   ipcMain.handle(IPC.app.getPetId, (event) => {
@@ -848,7 +876,7 @@ app.whenReady().then(async () => {
   registerIpc()
   startPetCursorProbe()
   setPetContextMenuHandler((win) => {
-    buildContextMenu().popup({ window: win })
+    buildContextMenu(getPetIdForWindow(win)).popup({ window: win })
   })
   registerChatShortcut()
   initAutoUpdater()
