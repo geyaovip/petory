@@ -3,6 +3,11 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react'
 const PET_HIT_SELECTOR = '[data-pet-hit]'
 const DRAG_HANDLE_SELECTOR = '[data-pet-drag]'
 
+function clearCursor(): void {
+  document.body.style.cursor = ''
+  document.documentElement.style.cursor = ''
+}
+
 function pointInRect(
   clientX: number,
   clientY: number,
@@ -22,6 +27,21 @@ function isOverPetImageBox(clientX: number, clientY: number): boolean {
     if (pointInRect(clientX, clientY, img.getBoundingClientRect())) {
       return true
     }
+  }
+  return false
+}
+
+function isOverPetOpaque(
+  clientX: number,
+  clientY: number,
+  alphaHitTest?: (img: HTMLImageElement, clientX: number, clientY: number) => boolean
+): boolean {
+  const images = document.querySelectorAll<HTMLImageElement>(`${PET_HIT_SELECTOR} img`)
+  for (const img of Array.from(images)) {
+    const rect = img.getBoundingClientRect()
+    if (!pointInRect(clientX, clientY, rect)) continue
+    if (alphaHitTest && !alphaHitTest(img, clientX, clientY)) continue
+    return true
   }
   return false
 }
@@ -52,7 +72,7 @@ export function useClickThrough(
   const isInteractiveAt = useCallback(
     (clientX: number, clientY: number): boolean => {
       if (isOverDragHandle(clientX, clientY)) return true
-      if (isOverPetImageBox(clientX, clientY)) return true
+      if (isOverPetOpaque(clientX, clientY, alphaHitTest)) return true
 
       const elements = document.elementsFromPoint(clientX, clientY)
       for (const element of elements) {
@@ -70,10 +90,28 @@ export function useClickThrough(
     [alphaHitTest]
   )
 
+  const applyCursor = useCallback(
+    (clientX: number, clientY: number) => {
+      if (draggingRef.current) {
+        document.body.style.cursor = 'grabbing'
+        document.documentElement.style.cursor = 'grabbing'
+        return
+      }
+      if (!isInteractiveAt(clientX, clientY)) {
+        clearCursor()
+        return
+      }
+      const cursor = isOverDragHandle(clientX, clientY) ? 'grab' : 'pointer'
+      document.body.style.cursor = cursor
+      document.documentElement.style.cursor = cursor
+    },
+    [draggingRef, isInteractiveAt]
+  )
+
   const isInteractiveTarget = useCallback(
     (target: Element | null, clientX: number, clientY: number): boolean => {
       if (isOverDragHandle(clientX, clientY)) return true
-      if (isOverPetImageBox(clientX, clientY)) return true
+      if (isOverPetOpaque(clientX, clientY, alphaHitTest)) return true
       if (!target) return false
       if (target.closest(DRAG_HANDLE_SELECTOR)) return true
       const hit = target.closest(PET_HIT_SELECTOR)
@@ -90,30 +128,18 @@ export function useClickThrough(
     (clientX: number, clientY: number) => {
       if (draggingRef.current || pointerButtonsRef.current > 0) {
         setIgnore(false)
+        applyCursor(clientX, clientY)
         return
       }
-      setIgnore(!isInteractiveAt(clientX, clientY))
+      const interactive = isInteractiveAt(clientX, clientY)
+      setIgnore(!interactive)
+      applyCursor(clientX, clientY)
     },
-    [draggingRef, isInteractiveAt, setIgnore]
+    [applyCursor, draggingRef, isInteractiveAt, setIgnore]
   )
 
   useEffect(() => {
     setIgnore(true)
-    let polling = false
-
-    const syncFromCursor = async (): Promise<void> => {
-      if (polling || draggingRef.current || pointerButtonsRef.current > 0) return
-      polling = true
-      try {
-        const [cursor, windowPosition] = await Promise.all([
-          window.petory.window.getCursorPosition(),
-          window.petory.window.getPosition()
-        ])
-        updateIgnoreAt(cursor.x - windowPosition.x, cursor.y - windowPosition.y)
-      } finally {
-        polling = false
-      }
-    }
 
     const onMove = (event: MouseEvent | PointerEvent): void => {
       pointerButtonsRef.current = event.buttons
@@ -128,6 +154,7 @@ export function useClickThrough(
         isOverDragHandle(event.clientX, event.clientY)
       ) {
         setIgnore(false)
+        applyCursor(event.clientX, event.clientY)
       }
     }
 
@@ -139,7 +166,18 @@ export function useClickThrough(
 
     const onPointerLeave = (): void => {
       if (draggingRef.current || pointerButtonsRef.current > 0) return
+      clearCursor()
       setIgnore(true)
+    }
+
+    const onCursorProbe = (position: { x: number; y: number } | null): void => {
+      if (draggingRef.current || pointerButtonsRef.current > 0) return
+      if (!position) {
+        clearCursor()
+        setIgnore(true)
+        return
+      }
+      updateIgnoreAt(position.x, position.y)
     }
 
     document.addEventListener('mousemove', onMove)
@@ -149,8 +187,8 @@ export function useClickThrough(
     window.addEventListener('pointercancel', onPointerUp)
     document.documentElement.addEventListener('mouseleave', onPointerLeave)
     document.documentElement.addEventListener('pointerleave', onPointerLeave)
-    const cursorPoll = window.setInterval(() => void syncFromCursor(), 120)
-    void syncFromCursor()
+    const unsubscribeProbe = window.petory.window.onCursorProbe(onCursorProbe)
+
     return () => {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('pointermove', onMove)
@@ -159,8 +197,9 @@ export function useClickThrough(
       window.removeEventListener('pointercancel', onPointerUp)
       document.documentElement.removeEventListener('mouseleave', onPointerLeave)
       document.documentElement.removeEventListener('pointerleave', onPointerLeave)
-      window.clearInterval(cursorPoll)
+      unsubscribeProbe()
+      clearCursor()
       setIgnore(false)
     }
-  }, [alphaHitTest, draggingRef, isInteractiveTarget, setIgnore, updateIgnoreAt])
+  }, [alphaHitTest, applyCursor, draggingRef, isInteractiveTarget, setIgnore, updateIgnoreAt])
 }

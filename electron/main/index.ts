@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, screen } fro
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { startPetCursorProbe } from './cursorProbe'
 import { loadDockIcon } from './appIcon'
 import { ERROR_MESSAGES } from '../../src/shared/constants'
 import { IPC, type MenuAction, type UploadPayload, type WindowPosition } from '../../src/shared/ipc'
@@ -783,6 +784,7 @@ app.whenReady().then(async () => {
     createAuthWindow()
   })
   registerIpc()
+  startPetCursorProbe()
   setPetContextMenuHandler((win) => {
     buildContextMenu().popup({ window: win })
   })

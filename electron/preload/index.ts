@@ -56,7 +56,14 @@ contextBridge.exposeInMainWorld('petory', {
     hide: (): void => ipcRenderer.send(IPC.window.hide),
     show: (): void => ipcRenderer.send(IPC.window.show),
     showContextMenu: (): void => ipcRenderer.send(IPC.window.showContextMenu),
-    setIgnoreMouseEvents: (ignore: boolean): void => ipcRenderer.send(IPC.window.setIgnoreMouseEvents, ignore)
+    setIgnoreMouseEvents: (ignore: boolean): void => ipcRenderer.send(IPC.window.setIgnoreMouseEvents, ignore),
+    onCursorProbe: (callback: (position: WindowPosition | null) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, position: WindowPosition | null): void => {
+        callback(position)
+      }
+      ipcRenderer.on(IPC.window.cursorProbe, handler)
+      return () => ipcRenderer.removeListener(IPC.window.cursorProbe, handler)
+    }
   },
   menu: {
     onAction: (callback: (action: MenuAction) => void): (() => void) => {

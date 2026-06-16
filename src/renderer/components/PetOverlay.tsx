@@ -181,7 +181,7 @@ export function PetOverlay({ petId }: PetOverlayProps): ReactElement {
         />
         <div
           data-pet-hit
-          className={`electron-no-drag relative cursor-grab touch-none will-change-transform active:cursor-grabbing ${poseAnimation(displayState)}`}
+          className={`electron-no-drag relative cursor-pointer touch-none will-change-transform active:cursor-grabbing ${poseAnimation(displayState)}`}
           onPointerDown={drag.onPointerDown}
           onContextMenu={(e) => {
             e.preventDefault()
@@ -194,7 +194,7 @@ export function PetOverlay({ petId }: PetOverlayProps): ReactElement {
               data-pet-hit
               src={petImage}
               alt={petName ?? '桌宠'}
-              className="animate-pet-pose-enter w-auto object-contain drop-shadow-md"
+              className="animate-pet-pose-enter w-auto cursor-pointer object-contain drop-shadow-md"
               style={{ height: petHeight }}
               draggable={false}
             />
@@ -220,7 +220,7 @@ export function PetOverlay({ petId }: PetOverlayProps): ReactElement {
         {!isPrimary && petName ? (
           <span
             data-pet-hit
-            className="mt-1 rounded-full bg-black/10 px-2 py-0.5 text-[10px] text-petory-text-secondary"
+            className="mt-1 cursor-pointer rounded-full bg-black/10 px-2 py-0.5 text-[10px] text-petory-text-secondary"
           >
             {petName}
           </span>

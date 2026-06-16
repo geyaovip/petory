@@ -8,6 +8,7 @@ RUN npm ci
 
 COPY server/ ./
 COPY src/shared /app/src/shared
+COPY resources/sample /app/resources/sample
 
 EXPOSE 8787
 

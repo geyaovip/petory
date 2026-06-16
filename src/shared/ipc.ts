@@ -8,7 +8,8 @@ export const IPC = {
     hide: 'petory:window:hide',
     show: 'petory:window:show',
     showContextMenu: 'petory:window:showContextMenu',
-    setIgnoreMouseEvents: 'petory:window:setIgnoreMouseEvents'
+    setIgnoreMouseEvents: 'petory:window:setIgnoreMouseEvents',
+    cursorProbe: 'petory:window:cursorProbe'
   },
   app: {
     quit: 'petory:app:quit',
@@ -146,6 +147,8 @@ export interface WindowPosition {
   x: number
   y: number
 }
+
+export type CursorProbePayload = WindowPosition | null
 
 export interface UploadPayload {
   fileName: string

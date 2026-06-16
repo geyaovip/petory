@@ -98,9 +98,22 @@ function panelPosition(
   return { x: x + offsetX, y: y + offsetY }
 }
 
+function elevatePanelAbovePet(win: BrowserWindow): void {
+  if (process.platform === 'darwin') {
+    win.setAlwaysOnTop(true, 'modal-panel')
+    return
+  }
+  if (process.platform === 'win32') {
+    win.setAlwaysOnTop(true, 'screen-saver')
+    return
+  }
+  win.setAlwaysOnTop(true)
+}
+
 function presentPanelWindow(win: BrowserWindow): void {
   if (win.isDestroyed()) return
   if (win.isMinimized()) win.restore()
+  elevatePanelAbovePet(win)
   if (!win.isVisible()) win.show()
   win.focus()
 }
@@ -138,12 +151,15 @@ function createPanelWindow(
 
   loadWindowContent(win, mode)
   const showPanel = (): void => {
-    if (!win.isDestroyed() && !win.isVisible()) win.show()
+    if (!win.isDestroyed()) presentPanelWindow(win)
   }
   win.once('ready-to-show', showPanel)
   // Slow or offline service calls must not leave a usable panel permanently hidden.
   setTimeout(showPanel, 1200)
   win.on('closed', () => {
+    if (!win.isDestroyed()) {
+      win.setAlwaysOnTop(false)
+    }
     ref.current = null
   })
   ref.current = win
@@ -495,6 +511,8 @@ export function openPetsWindow(): void {
     'Petory — Pets',
     { x: 60, y: 60 }
   )
+  // Ensure the first open is visible even if ready-to-show is delayed.
+  presentPanelWindow(petsWindow)
   petsWindow.on('closed', () => {
     petsWindow = null
   })

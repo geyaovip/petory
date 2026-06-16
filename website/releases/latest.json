@@ -1,20 +1,22 @@
 {
-  "version": "2.4.15",
-  "releasedAt": "2026-06-16",
+  "version": "2.4.16",
+  "releasedAt": "2026-06-13",
   "mac": {
-    "fileName": "Petory-2.4.15-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.15/Petory-2.4.15-universal.dmg",
+    "fileName": "Petory-2.4.16-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.16/Petory-2.4.16-universal.dmg",
     "sizeLabel": "~189 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.15.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.15/Petory-Setup-2.4.15.exe",
+    "fileName": "Petory-Setup-2.4.16.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.16/Petory-Setup-2.4.16.exe",
     "sizeLabel": "~92 MB"
   },
   "updateFeed": "https://petory.chat/releases",
   "changelog": [
-    "修复上传后自动生成重复请求 3 次的问题",
-    "修复登录页品牌 Logo 不显示",
-    "服务端未配置图像 API 时不再创建大量失败记录"
+    "生成姿势时附带默认示例姿势图作参考，六姿势更贴近官方示例",
+    "优化姿势提示词：focus 趴卧、sleep 蜷缩、坐姿姿势更统一",
+    "修复悬停桌宠时鼠标指针不立即变化的问题",
+    "修复宠物管理窗口被桌宠挡住或无法弹出的问题",
+    "macOS 未签名版更新改为打开安装包手动安装（2.4.15）"
   ]
 }

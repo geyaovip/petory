@@ -1,9 +1,11 @@
+import fs from 'fs'
 import type { ReferenceMode } from '../../../src/shared/generation/reference'
 import { getStylePrompt } from '../../../src/shared/prompts/stylePrompts'
 import type { PetVisualState } from '../../../src/shared/types/growth'
 import type { PetStyleType } from '../../../src/shared/types/pet'
 import { getArkApiKey } from '../apiKeys'
 import { prepareReferenceFromPath } from './prepareReference'
+import { getSamplePoseReferencePath } from './samplePoseReference'
 
 interface SeedreamResponse {
   data?: Array<{ b64_json?: string; url?: string }>
@@ -35,6 +37,10 @@ function toDataUrl(buffer: Buffer, mimeType: string): string {
   return `data:${mimeType};base64,${buffer.toString('base64')}`
 }
 
+function buildImageInput(identityDataUrl: string, poseReferenceDataUrl?: string): string | string[] {
+  return poseReferenceDataUrl ? [identityDataUrl, poseReferenceDataUrl] : identityDataUrl
+}
+
 export async function generatePetImage(
   referencePath: string,
   styleType: PetStyleType = 'petory',
@@ -43,10 +49,16 @@ export async function generatePetImage(
 ): Promise<Buffer> {
   const referenceMode = options.referenceMode ?? 'upload'
   const prepared = await prepareReferenceFromPath(referencePath, referenceMode)
-  const image = toDataUrl(prepared.buffer, prepared.mimeType)
+  const identityDataUrl = toDataUrl(prepared.buffer, prepared.mimeType)
+  const poseReferencePath = getSamplePoseReferencePath(pose)
+  const poseReferenceDataUrl = poseReferencePath
+    ? toDataUrl(fs.readFileSync(poseReferencePath), 'image/png')
+    : undefined
+  const image = buildImageInput(identityDataUrl, poseReferenceDataUrl)
+  const hasPoseReference = Boolean(poseReferenceDataUrl)
 
   console.info(
-    `[petory] Seedream image reference: ${referencePath} (source=${prepared.sourceBytes}B -> prepared=${prepared.preparedBytes}B, ${prepared.mimeType}, mode=${referenceMode}, pose=${pose}, attached=true)`
+    `[petory] Seedream image reference: ${referencePath} (source=${prepared.sourceBytes}B -> prepared=${prepared.preparedBytes}B, ${prepared.mimeType}, mode=${referenceMode}, pose=${pose}, poseRef=${poseReferencePath ?? 'none'}, images=${hasPoseReference ? 2 : 1})`
   )
 
   const response = await fetch(`${getApiBase()}/images/generations`, {
@@ -57,13 +69,14 @@ export async function generatePetImage(
     },
     body: JSON.stringify({
       model: getModel(),
-      prompt: getStylePrompt(styleType, pose, referenceMode),
+      prompt: getStylePrompt(styleType, pose, referenceMode, hasPoseReference),
       image,
       sequential_image_generation: 'disabled',
       size: '2K',
       output_format: 'png',
       response_format: 'b64_json',
-      watermark: false
+      watermark: false,
+      ...(options.seed !== undefined ? { seed: options.seed } : {})
     })
   })
 

@@ -1,7 +1,9 @@
+import fs from 'fs'
 import type { ReferenceMode } from '../../../src/shared/generation/reference.js'
 import { getStylePrompt } from '../../../src/shared/prompts/stylePrompts.js'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js'
 import { config } from '../config.js'
+import { getSamplePoseReferencePath } from '../lib/samplePoseReference.js'
 
 interface SeedreamResponse {
   data?: Array<{ b64_json?: string; url?: string }>
@@ -16,6 +18,10 @@ export interface GenerateImageOptions {
 
 function toDataUrl(buffer: Buffer, mimeType = 'image/png'): string {
   return `data:${mimeType};base64,${buffer.toString('base64')}`
+}
+
+function buildImageInput(identityDataUrl: string, poseReferenceDataUrl?: string): string | string[] {
+  return poseReferenceDataUrl ? [identityDataUrl, poseReferenceDataUrl] : identityDataUrl
 }
 
 export function assertImageApiConfigured():
@@ -38,8 +44,18 @@ export async function generateImage(
   if (!config.arkApiKey) throw new Error('IMAGE_NOT_CONFIGURED')
 
   const referenceMode = options.referenceMode ?? 'upload'
-  const prompt = getStylePrompt(styleType, pose, referenceMode)
-  const image = toDataUrl(imageBuffer, options.mimeType ?? 'image/png')
+  const poseReferencePath = getSamplePoseReferencePath(pose)
+  const poseReferenceDataUrl = poseReferencePath
+    ? toDataUrl(fs.readFileSync(poseReferencePath), 'image/png')
+    : undefined
+  const hasPoseReference = Boolean(poseReferenceDataUrl)
+  const prompt = getStylePrompt(styleType, pose, referenceMode, hasPoseReference)
+  const identityDataUrl = toDataUrl(imageBuffer, options.mimeType ?? 'image/png')
+  const image = buildImageInput(identityDataUrl, poseReferenceDataUrl)
+
+  console.info(
+    `[petory] Seedream pose=${pose} mode=${referenceMode} poseRef=${poseReferencePath ?? 'none'} images=${hasPoseReference ? 2 : 1}`
+  )
 
   const response = await fetch(`${config.arkApiBase}/images/generations`, {
     method: 'POST',
@@ -55,7 +71,8 @@ export async function generateImage(
       size: '2K',
       output_format: 'png',
       response_format: 'b64_json',
-      watermark: false
+      watermark: false,
+      ...(options.seed !== undefined ? { seed: options.seed } : {})
     })
   })
 

@@ -51,6 +51,7 @@ export interface PetoryAPI {
     show: () => void
     showContextMenu: () => void
     setIgnoreMouseEvents: (ignore: boolean) => void
+    onCursorProbe: (callback: (position: WindowPosition | null) => void) => () => void
   }
   menu: {
     onAction: (callback: (action: MenuAction) => void) => () => void
