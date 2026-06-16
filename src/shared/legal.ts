@@ -2,6 +2,6 @@
 export const LEGAL_VERSION = '1.0.0'
 
 export const LEGAL_DOCUMENTS = {
-  terms: 'terms.html',
-  privacy: 'privacy.html'
+  terms: 'terms/',
+  privacy: 'privacy/'
 } as const

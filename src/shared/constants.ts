@@ -16,9 +16,9 @@ export const PERSONALITIES = [
 ] as const
 
 export const PETORY_WEBSITE_URL = 'https://petory.chat'
-export const PETORY_DOWNLOAD_PAGE = `${PETORY_WEBSITE_URL}/download.html`
-export const PETORY_TERMS_URL = `${PETORY_WEBSITE_URL}/terms.html`
-export const PETORY_PRIVACY_URL = `${PETORY_WEBSITE_URL}/privacy.html`
+export const PETORY_DOWNLOAD_PAGE = `${PETORY_WEBSITE_URL}/download/`
+export const PETORY_TERMS_URL = `${PETORY_WEBSITE_URL}/terms/`
+export const PETORY_PRIVACY_URL = `${PETORY_WEBSITE_URL}/privacy/`
 export const DEFAULT_UPDATE_FEED_URL = `${PETORY_WEBSITE_URL}/releases`
 
 export const CONTENT_SAFETY = {
