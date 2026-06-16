@@ -1,21 +1,21 @@
 {
-  "version": "2.4.19",
+  "version": "2.4.20",
   "releasedAt": "2026-06-16",
   "mac": {
-    "fileName": "Petory-2.4.19-universal.dmg",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.19/Petory-2.4.19-universal.dmg",
+    "fileName": "Petory-2.4.20-universal.dmg",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.20/Petory-2.4.20-universal.dmg",
     "sizeLabel": "~189 MB"
   },
   "win": {
-    "fileName": "Petory-Setup-2.4.19.exe",
-    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.19/Petory-Setup-2.4.19.exe",
+    "fileName": "Petory-Setup-2.4.20.exe",
+    "url": "https://github.com/geyaovip/petory/releases/download/v2.4.20/Petory-Setup-2.4.20.exe",
     "sizeLabel": "~92 MB"
   },
   "updateFeed": "https://petory.chat/releases",
   "changelog": [
-    "支持从云端导入已生成完成的桌宠，修复关闭创建页后宠物管理看不到的问题",
-    "宠物管理显示待继续生成/待完成创建的草稿宠物",
-    "优化生成保真：idle 仅用原图定身份，其余姿势用锚点+姿势参考",
-    "修复生成中关闭创建页后桌宠无法上桌面的问题"
+    "云端生成完成后自动同步到宠物列表，无需手动导入",
+    "启动与打开宠物管理时自动拉取未下载的生成结果",
+    "修复关闭创建页后宠物不在列表显示的问题",
+    "管理端僵尸「生成中」记录服务端自动清理"
   ]
 }
