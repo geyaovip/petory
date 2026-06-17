@@ -17,7 +17,7 @@ import {
   type BatchJobType
 } from './generationService.js'
 import { assertDeviceAllowed } from './deviceGuardService.js'
-import { assertCanCreateCustomPet, markCustomPetCreated } from './customPetService.js'
+import { assertCanCreateCustomPet, assertCanRegenerateCustomPet, markCustomPetCreated } from './customPetService.js'
 import { saveBatchInputImage, saveBatchPoseOutput, toPublicUrl } from './storageService.js'
 
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
@@ -97,8 +97,11 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
   if (!poseCheck.ok) return poseCheck
 
   if (input.jobType === 'full_batch') {
-    const createCheck = await assertCanCreateCustomPet(user)
-    if (!createCheck.ok) return createCheck
+    const slotCheck = await assertCanCreateCustomPet(user)
+    if (!slotCheck.ok) return slotCheck
+  } else if (input.jobType === 'pose_completion') {
+    const regenCheck = await assertCanRegenerateCustomPet(user)
+    if (!regenCheck.ok) return regenCheck
   }
 
   const imageApiCheck = assertImageApiConfigured()
@@ -225,6 +228,7 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
   if (deductQuota) {
     if (input.jobType === 'full_batch' && idleSucceeded) {
       await consumeGeneration(user.id, `batch ${batch.id}`)
+      await markCustomPetCreated(user.id)
     }
   }
 
@@ -258,10 +262,6 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
       message: '姿势补全失败，请稍后重试。',
       batch: serializeBatch(full)
     }
-  }
-
-  if (input.jobType === 'full_batch' && idleSucceeded) {
-    await markCustomPetCreated(user.id)
   }
 
   return { success: true as const, batch: serializeBatch(full) }

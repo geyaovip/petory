@@ -74,7 +74,8 @@ const NON_RETRYABLE_CODES = new Set([
   'API_NOT_CONFIGURED',
   'AUTH_EXPIRED',
   'SERVICE_DISABLED',
-  'RATE_LIMIT'
+  'RATE_LIMIT',
+  'CUSTOM_PET_LIMIT'
 ])
 
 function isRetryableError(error: unknown): boolean {

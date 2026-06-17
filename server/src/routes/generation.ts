@@ -8,6 +8,7 @@ import { defaultPosesForUser, parsePosesJson } from '../services/entitlementServ
 import { getBatchForUser, runGenerationBatch, serializeBatch } from '../services/batchService.js'
 import { createSinglePoseRegen, logClientLocalBatch, serializeJob } from '../services/generationService.js'
 import { canConsumeGeneration, consumeGeneration, getQuotaView } from '../services/quotaService.js'
+import { assertCanCreateCustomPet } from '../services/customPetService.js'
 import { assertDeviceAllowed } from '../services/deviceGuardService.js'
 import { prisma } from '../lib/prisma.js'
 
@@ -15,7 +16,7 @@ const POSES = new Set(['idle', 'happy', 'sleep', 'focus', 'remind', 'angry'])
 
 function errorStatus(code?: string): number {
   if (code === 'QUOTA_EXCEEDED') return 402
-  if (code === 'CUSTOM_PET_LIMIT') return 403
+  if (code === 'CUSTOM_PET_LIMIT') return 409
   if (code === 'DEVICE_FLAGGED') return 403
   if (code === 'RATE_LIMIT') return 429
   if (code === 'SERVICE_DISABLED') return 503
@@ -54,6 +55,11 @@ generationRoutes.post('/consume', async (c) => {
   const quotaCheck = await canConsumeGeneration(user)
   if (!quotaCheck.ok) {
     return c.json({ success: false, code: quotaCheck.code, message: quotaCheck.message }, 402)
+  }
+
+  const slotCheck = await assertCanCreateCustomPet(user)
+  if (!slotCheck.ok) {
+    return c.json({ success: false, code: slotCheck.code, message: slotCheck.message }, 409)
   }
 
   await consumeGeneration(user.id, 'client_local_minimax')
@@ -100,13 +106,16 @@ generationRoutes.post('/log-local-batch', async (c) => {
     previews[pose] = Buffer.from(await preview.arrayBuffer())
   }
 
-  await logClientLocalBatch(user, {
+  const logged = await logClientLocalBatch(user, {
     deviceId,
     styleType,
     poses,
     clientPetId: typeof body.clientPetId === 'string' ? body.clientPetId : undefined,
     previews
   })
+  if (!logged.ok) {
+    return c.json({ success: false, code: logged.code, message: logged.message }, 409)
+  }
 
   return c.json({ success: true })
 })
