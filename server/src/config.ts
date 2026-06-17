@@ -20,7 +20,7 @@ export const config = {
   ),
   arkApiKey: process.env.ARK_API_KEY ?? '',
   arkApiBase: (process.env.ARK_API_BASE ?? 'https://ark.cn-beijing.volces.com/api/v3').replace(/\/$/, ''),
-  arkImageModel: process.env.ARK_IMAGE_MODEL ?? 'doubao-seedream-5-0-260128',
+  arkImageModel: process.env.ARK_IMAGE_MODEL ?? 'doubao-seedream-4-5-251128',
   adminEmail: (process.env.ADMIN_EMAIL ?? 'admin@petory.app').toLowerCase(),
   operatorEmail: (process.env.OPERATOR_EMAIL ?? 'operator@petory.app').toLowerCase(),
   publicBaseUrl: (process.env.PUBLIC_BASE_URL ?? 'http://localhost:8787').replace(/\/$/, ''),

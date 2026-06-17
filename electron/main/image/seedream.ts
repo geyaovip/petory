@@ -31,7 +31,7 @@ function getApiBase(): string {
 }
 
 function getModel(): string {
-  return process.env['ARK_IMAGE_MODEL'] ?? 'doubao-seedream-5-0-260128'
+  return process.env['ARK_IMAGE_MODEL'] ?? 'doubao-seedream-4-5-251128'
 }
 
 function toDataUrl(buffer: Buffer, mimeType: string): string {
