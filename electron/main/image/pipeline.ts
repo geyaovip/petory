@@ -12,7 +12,7 @@ import type {
 } from '../../../src/shared/types/pet'
 import { ApiError } from '../api/client'
 import { isUsingRemoteQuota } from '../api/remoteQuotaStore'
-import { canGeneratePet, canRegenerateCustomPet } from '../auth/entitlementService'
+import { canGeneratePet } from '../auth/entitlementService'
 import { ensureRemoteQuotaFresh } from '../api/remoteQuotaStore'
 import { incrementGenerationUsage } from '../auth/usageStore'
 import {
@@ -342,7 +342,7 @@ export async function runGenerationPipeline(petId: string): Promise<GenerationRe
   } catch (error) {
     console.warn('[petory] failed to refresh remote quota before generation:', error)
   }
-  const quota = canGeneratePet(petId)
+  const quota = canGeneratePet()
   if (!quota.ok) {
     return {
       success: false,
@@ -465,11 +465,6 @@ export async function runCompletePosesPipeline(petId: string): Promise<CompleteP
     return { success: true, petId, addedPoses: [] }
   }
 
-  const regenCheck = canRegenerateCustomPet(petId)
-  if (!regenCheck.ok) {
-    return { success: false, message: regenCheck.message }
-  }
-
   const missing = getMissingPosesForPet(pet)
   if (missing.length === 0) {
     return { success: true, petId, addedPoses: [] }
@@ -531,11 +526,6 @@ export async function runRegenerateSinglePose(
   }
   if (pet.isSample) {
     return { success: false, message: '示例宠物不支持单姿势重生成。' }
-  }
-
-  const regenCheck = canRegenerateCustomPet(petId)
-  if (!regenCheck.ok) {
-    return { success: false, message: regenCheck.message }
   }
 
   const existing = pet.posePaths ?? {}

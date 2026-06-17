@@ -19,7 +19,6 @@ import {
   isRemoteCustomPetCreated
 } from '../api/remoteQuotaStore'
 import { loadStore } from '../petStore'
-import { hasUploadReference } from '../image/referencePath'
 import { getCurrentUser, loadSession } from './authStore'
 import { loadUsage } from './usageStore'
 
@@ -31,15 +30,11 @@ function localCustomPetCount(): number {
   return loadStore().pets.filter((pet) => !pet.isSample).length
 }
 
-function hasCustomPetSlotUsed(): boolean {
-  if (isUsingRemoteQuota() && isRemoteCustomPetCreated()) return true
+function hasReachedCustomPetLimit(): boolean {
+  if (isUsingRemoteQuota()) {
+    return isRemoteCustomPetCreated()
+  }
   return localCustomPetCount() > 0
-}
-
-function isContinuingCustomDraft(petId?: string): boolean {
-  if (!petId) return false
-  const pet = loadStore().pets.find((p) => p.id === petId)
-  return Boolean(pet && !pet.isSample && !pet.imagePetPath && hasUploadReference(pet))
 }
 
 export function getLimitsForUser(): EntitlementLimits {
@@ -91,7 +86,7 @@ export function buildAuthState(): AuthState {
         remoteChat ?? Math.max(0, limits.dailyChatLimit - usage.chatCount),
       remainingGeneration:
         remoteGen ?? Math.max(0, limits.dailyGenerationLimit - usage.generationCount),
-      canCreateCustomPet: !hasCustomPetSlotUsed(),
+      canCreateCustomPet: !hasReachedCustomPetLimit(),
       ...remoteStatus
     }
   }
@@ -104,7 +99,7 @@ export function buildAuthState(): AuthState {
     limits,
     remainingChat: Math.max(0, limits.dailyChatLimit - usage.chatCount),
     remainingGeneration: Math.max(0, limits.dailyGenerationLimit - usage.generationCount),
-    canCreateCustomPet: !hasCustomPetSlotUsed(),
+    canCreateCustomPet: !hasReachedCustomPetLimit(),
     ...remoteStatus
   }
 }
@@ -123,9 +118,7 @@ export function canSendChat(): { ok: true } | { ok: false; message: string } {
   return { ok: true }
 }
 
-export function canGeneratePet(
-  petId?: string
-): { ok: true } | { ok: false; message: string } {
+export function canGeneratePet(): { ok: true } | { ok: false; message: string } {
   if (isRemoteBackendEnabled() && isUsingRemoteQuota() && !isGenerationServiceEnabled()) {
     return { ok: false, message: '生成服务维护中，请稍后再试。' }
   }
@@ -135,22 +128,6 @@ export function canGeneratePet(
       ok: false,
       message: '今日生成次数已用完，请明天再来。'
     }
-  }
-  if (hasCustomPetSlotUsed() && !isContinuingCustomDraft(petId)) {
-    return { ok: false, message: CUSTOM_PET_LIMIT_MESSAGE }
-  }
-  return { ok: true }
-}
-
-export function canRegenerateCustomPet(
-  petId: string
-): { ok: true } | { ok: false; message: string } {
-  const pet = loadStore().pets.find((p) => p.id === petId)
-  if (!pet || pet.isSample) {
-    return { ok: false, message: '示例宠物不支持重新生成。' }
-  }
-  if (hasCustomPetSlotUsed() || pet.imagePetPath) {
-    return { ok: false, message: CUSTOM_PET_LIMIT_MESSAGE }
   }
   return { ok: true }
 }
@@ -187,7 +164,7 @@ export function canActivatePet(petId: string): { ok: true } | { ok: false; messa
 }
 
 export function canCreatePet(): { ok: true } | { ok: false; message: string } {
-  if (hasCustomPetSlotUsed()) {
+  if (hasReachedCustomPetLimit()) {
     return { ok: false, message: CUSTOM_PET_LIMIT_MESSAGE }
   }
 

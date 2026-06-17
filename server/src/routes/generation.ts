@@ -8,7 +8,6 @@ import { defaultPosesForUser, parsePosesJson } from '../services/entitlementServ
 import { getBatchForUser, runGenerationBatch, serializeBatch } from '../services/batchService.js'
 import { createSinglePoseRegen, logClientLocalBatch, serializeJob } from '../services/generationService.js'
 import { canConsumeGeneration, consumeGeneration, getQuotaView } from '../services/quotaService.js'
-import { reserveCustomPetSlot } from '../services/customPetService.js'
 import { assertDeviceAllowed } from '../services/deviceGuardService.js'
 import { prisma } from '../lib/prisma.js'
 
@@ -57,11 +56,6 @@ generationRoutes.post('/consume', async (c) => {
     return c.json({ success: false, code: quotaCheck.code, message: quotaCheck.message }, 402)
   }
 
-  const slotCheck = await reserveCustomPetSlot(user.id)
-  if (!slotCheck.ok) {
-    return c.json({ success: false, code: slotCheck.code, message: slotCheck.message }, 403)
-  }
-
   await consumeGeneration(user.id, 'client_local_minimax')
   return c.json({ success: true, quota: await getQuotaView(user) })
 })
@@ -106,16 +100,13 @@ generationRoutes.post('/log-local-batch', async (c) => {
     previews[pose] = Buffer.from(await preview.arrayBuffer())
   }
 
-  const logged = await logClientLocalBatch(user, {
+  await logClientLocalBatch(user, {
     deviceId,
     styleType,
     poses,
     clientPetId: typeof body.clientPetId === 'string' ? body.clientPetId : undefined,
     previews
   })
-  if (!logged.ok) {
-    return c.json({ success: false, code: logged.code, message: logged.message }, 403)
-  }
 
   return c.json({ success: true })
 })

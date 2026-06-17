@@ -380,6 +380,26 @@ export function PetManagerPanel(): ReactElement {
                 </div>
               </section>
 
+              {!selectedPet.isSample && selectedPet.imageOriginalPath ? (
+                <section className="mt-7 border-t border-petory-border pt-6">
+                  <h3 className="text-[13px] font-semibold">重新生成</h3>
+                  <p className="mt-1 text-[12px] text-petory-text-tertiary">基于原照片重新生成完整六种姿势，不改变主体风格。</p>
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      window.petory.pet.openOnboarding({
+                        mode: 'restyle',
+                        petId: selectedPet.id,
+                        returnTo: 'pets'
+                      })
+                    }
+                  >
+                    重新生成这只宠物
+                  </Button>
+                </section>
+              ) : null}
 
               <section className="mt-7 border-t border-petory-border pt-6">
                 <Button

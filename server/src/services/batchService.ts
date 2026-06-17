@@ -17,8 +17,7 @@ import {
   type BatchJobType
 } from './generationService.js'
 import { assertDeviceAllowed } from './deviceGuardService.js'
-import { reserveCustomPetSlot } from './customPetService.js'
-import { CUSTOM_PET_LIMIT_MESSAGE } from '../../../src/shared/entitlements.js'
+import { assertCanCreateCustomPet, markCustomPetCreated } from './customPetService.js'
 import { saveBatchInputImage, saveBatchPoseOutput, toPublicUrl } from './storageService.js'
 
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
@@ -98,14 +97,8 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
   if (!poseCheck.ok) return poseCheck
 
   if (input.jobType === 'full_batch') {
-    const slotCheck = await reserveCustomPetSlot(user.id)
-    if (!slotCheck.ok) return slotCheck
-  } else if (input.jobType === 'pose_completion') {
-    return {
-      success: false as const,
-      code: 'CUSTOM_PET_LIMIT',
-      message: CUSTOM_PET_LIMIT_MESSAGE
-    }
+    const createCheck = await assertCanCreateCustomPet(user)
+    if (!createCheck.ok) return createCheck
   }
 
   const imageApiCheck = assertImageApiConfigured()
@@ -265,6 +258,10 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
       message: '姿势补全失败，请稍后重试。',
       batch: serializeBatch(full)
     }
+  }
+
+  if (input.jobType === 'full_batch' && idleSucceeded) {
+    await markCustomPetCreated(user.id)
   }
 
   return { success: true as const, batch: serializeBatch(full) }

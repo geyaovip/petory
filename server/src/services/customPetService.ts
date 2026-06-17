@@ -1,9 +1,28 @@
 import type { User } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
-
-const CUSTOM_PET_LIMIT_MESSAGE = '每个账号仅可创建一只自定义宠物，无法再次生成。'
+import { CUSTOM_PET_LIMIT_MESSAGE } from '../../../src/shared/entitlements.js'
 
 const CREATION_BATCH_TYPES = ['full_batch', 'client_local'] as const
+
+async function findSucceededCustomPetCreation(userId: string) {
+  const batches = await prisma.generationBatch.findMany({
+    where: {
+      userId,
+      jobType: { in: [...CREATION_BATCH_TYPES] },
+      status: { in: ['succeeded', 'partial'] },
+      posesSucceeded: { gte: 1 }
+    },
+    include: {
+      jobs: {
+        where: { pose: 'idle', status: 'succeeded' },
+        take: 1
+      }
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 5
+  })
+  return batches.find((batch) => batch.jobs.length > 0) ?? null
+}
 
 export async function syncCustomPetCreatedAt(userId: string): Promise<Date | null> {
   const user = await prisma.user.findUnique({
@@ -11,18 +30,23 @@ export async function syncCustomPetCreatedAt(userId: string): Promise<Date | nul
     select: { customPetCreatedAt: true }
   })
   if (!user) return null
-  if (user.customPetCreatedAt) return user.customPetCreatedAt
 
-  const earliest = await prisma.generationBatch.findFirst({
-    where: { userId, jobType: { in: [...CREATION_BATCH_TYPES] } },
-    orderBy: { createdAt: 'asc' },
-    select: { createdAt: true }
-  })
-  if (!earliest) return null
+  const succeeded = await findSucceededCustomPetCreation(userId)
+  if (!succeeded) {
+    if (user.customPetCreatedAt) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { customPetCreatedAt: null }
+      })
+    }
+    return null
+  }
+
+  if (user.customPetCreatedAt) return user.customPetCreatedAt
 
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: { customPetCreatedAt: earliest.createdAt }
+    data: { customPetCreatedAt: succeeded.createdAt }
   })
   return updated.customPetCreatedAt
 }
@@ -32,6 +56,7 @@ export async function hasUsedCustomPetSlot(userId: string): Promise<boolean> {
   return createdAt !== null
 }
 
+/** Block only starting a second custom pet (new full_batch). */
 export async function assertCanCreateCustomPet(
   user: User
 ): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
@@ -45,36 +70,11 @@ export async function assertCanCreateCustomPet(
   return { ok: true }
 }
 
-/** Reserve the one-time custom pet slot before starting generation. */
-export async function reserveCustomPetSlot(
-  userId: string
-): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
-  await syncCustomPetCreatedAt(userId)
-  const result = await prisma.user.updateMany({
+export async function markCustomPetCreated(userId: string, createdAt = new Date()): Promise<void> {
+  await prisma.user.updateMany({
     where: { id: userId, customPetCreatedAt: null },
-    data: { customPetCreatedAt: new Date() }
+    data: { customPetCreatedAt: createdAt }
   })
-  if (result.count === 0) {
-    return {
-      ok: false,
-      code: 'CUSTOM_PET_LIMIT',
-      message: CUSTOM_PET_LIMIT_MESSAGE
-    }
-  }
-  return { ok: true }
-}
-
-export async function assertCanRegenerateCustomPet(
-  user: User
-): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
-  if (await hasUsedCustomPetSlot(user.id)) {
-    return {
-      ok: false,
-      code: 'CUSTOM_PET_LIMIT',
-      message: CUSTOM_PET_LIMIT_MESSAGE
-    }
-  }
-  return { ok: true }
 }
 
 export async function getCustomPetStatus(userId: string) {
