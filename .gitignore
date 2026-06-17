@@ -22,3 +22,4 @@ server/dev.db
 server/dev.db-journal
 server/uploads
 *.tsbuildinfo
+src/shared/**/*.js
