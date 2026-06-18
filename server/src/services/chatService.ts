@@ -9,6 +9,8 @@ import { chatWithKimi, type ChatPetContext } from './kimiService.js'
 import { canConsumeChat, consumeChat, getChatQuotaView } from './chatQuotaService.js'
 import { assertChatEnabled } from './systemConfigService.js'
 
+export type { ChatPetContext } from './kimiService.js'
+
 const PERSONALITIES = new Set<PetPersonality>([
   '温柔陪伴型',
   '元气鼓励型',

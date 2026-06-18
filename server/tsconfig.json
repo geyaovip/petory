@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "..",
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["../src/shared/*"]

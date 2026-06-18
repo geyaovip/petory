@@ -28,6 +28,10 @@ export function mimeToExt(mime: string): string {
   return 'jpg'
 }
 
+function fail(check: { code: string; message: string }) {
+  return { success: false as const, code: check.code, message: check.message }
+}
+
 /** B1.0 兼容：单姿势重生成，不扣额度 */
 export async function createSinglePoseRegen(
   user: User,
@@ -40,17 +44,17 @@ export async function createSinglePoseRegen(
   }
 ) {
   const serviceCheck = await assertGenerationEnabled()
-  if (!serviceCheck.ok) return serviceCheck
+  if (!serviceCheck.ok) return fail(serviceCheck)
 
   if (user.status !== 'active') {
     return { success: false as const, code: 'USER_DISABLED', message: '账号已被禁用。' }
   }
 
   const deviceCheck = await assertDeviceAllowed(user.id, input.deviceId)
-  if (!deviceCheck.ok) return deviceCheck
+  if (!deviceCheck.ok) return fail(deviceCheck)
 
   const regenCheck = await assertCanRegenerateCustomPet(user)
-  if (!regenCheck.ok) return regenCheck
+  if (!regenCheck.ok) return fail(regenCheck)
 
   if (!ALLOWED_MIME.has(input.mimeType)) {
     return { success: false as const, code: 'UPLOAD_INVALID', message: '不支持的图片格式。' }

@@ -12,6 +12,13 @@ import { appRoutes } from './routes/app.js'
 import { consumeAdminMagicLink, requestAdminMagicLink } from './services/authService.js'
 import { API_VERSION, getDeploymentInfo } from './services/deploymentService.js'
 import { ensureUploadsDir } from './services/storageService.js'
+import { checkRateLimit } from './lib/rateLimit.js'
+
+function clientIp(c: { req: { header: (name: string) => string | undefined } }): string {
+  return (c.req.header('x-forwarded-for') ?? c.req.header('cf-connecting-ip') ?? 'local')
+    .split(',')[0]!
+    .trim()
+}
 
 export function createApp() {
   ensureUploadsDir()
@@ -51,15 +58,23 @@ export function createApp() {
   app.route('/api/auth', authRoutes)
 
   app.post('/api/admin/magic-link', async (c) => {
-    const body = await c.req.json<{ email?: string }>()
+    const body = (await c.req.json<{ email?: string }>().catch(() => ({}))) as { email?: string }
     if (!body.email) return c.json({ success: false, message: '请输入邮箱地址。' }, 400)
+    const email = body.email.trim().toLowerCase()
+    const ip = clientIp(c)
+    if (!checkRateLimit(`admin-magic:ip:${ip}`, 5, 60 * 60 * 1000)) {
+      return c.json({ success: false, message: '登录请求过于频繁，请稍后再试。' }, 429)
+    }
+    if (!checkRateLimit(`admin-magic:email:${email}`, 3, 60 * 60 * 1000)) {
+      return c.json({ success: false, message: '登录邮件请求过于频繁，请稍后再试。' }, 429)
+    }
     const result = await requestAdminMagicLink({ email: body.email })
     return c.json(result, result.success ? 200 : 400)
   })
   app.post('/api/admin/auth/callback', async (c) => {
-    const body = await c.req.json<{ token?: string }>()
+    const body = (await c.req.json<{ token?: string }>().catch(() => ({}))) as { token?: string }
     if (!body.token) return c.json({ success: false, message: '登录链接无效。' }, 400)
-    const ip = c.req.header('x-forwarded-for') ?? undefined
+    const ip = clientIp(c)
     const result = await consumeAdminMagicLink(body.token, { ip })
     if (!result.success) return c.json(result, 401)
     return c.json(result)

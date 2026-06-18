@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { PetPoseType, PetStyleType } from '../../../src/shared/types/pet.js'
 import { config } from '../config.js'
 import { checkRateLimit } from '../lib/rateLimit.js'
@@ -14,7 +15,7 @@ import { prisma } from '../lib/prisma.js'
 
 const POSES = new Set(['idle', 'happy', 'sleep', 'focus', 'remind', 'angry'])
 
-function errorStatus(code?: string): number {
+function errorStatus(code?: string): ContentfulStatusCode {
   if (code === 'QUOTA_EXCEEDED') return 402
   if (code === 'CUSTOM_PET_LIMIT') return 409
   if (code === 'DEVICE_FLAGGED') return 403
@@ -30,10 +31,10 @@ generationRoutes.use('*', requireUser)
 
 function checkGenRateLimit(userId: string, ip: string) {
   if (!checkRateLimit(`gen:user:${userId}`, 3, 60_000)) {
-    return { ok: false as const, status: 429, message: '请求过于频繁，请稍后再试。' }
+    return { ok: false as const, status: 429 as const, message: '请求过于频繁，请稍后再试。' }
   }
   if (!checkRateLimit(`gen:ip:${ip}`, 20, 60_000)) {
-    return { ok: false as const, status: 429, message: '请求过于频繁，请稍后再试。' }
+    return { ok: false as const, status: 429 as const, message: '请求过于频繁，请稍后再试。' }
   }
   return { ok: true as const }
 }
@@ -238,6 +239,10 @@ generationRoutes.post('/jobs', async (c) => {
   const deviceId = body['deviceId'] ? String(body['deviceId']) : undefined
 
   if (!(image instanceof File)) return c.json({ success: false, message: '请上传图片。' }, 400)
+  if (!POSES.has(pose)) return c.json({ success: false, message: '无效的姿势类型。' }, 400)
+  if (image.size > config.maxUploadBytes) {
+    return c.json({ success: false, message: '图片超过 10MB 限制。' }, 400)
+  }
   const buffer = Buffer.from(await image.arrayBuffer())
 
   const result = await runGenerationBatch(user, {

@@ -18,7 +18,7 @@ function resolveExpiresIn(override?: string): string | undefined {
 export function signToken(payload: TokenPayload, expiresIn?: string): string {
   const ttl = resolveExpiresIn(expiresIn)
   if (!ttl) return jwt.sign(payload, config.jwtSecret)
-  return jwt.sign(payload, config.jwtSecret, { expiresIn: ttl })
+  return jwt.sign(payload, config.jwtSecret, { expiresIn: ttl as never })
 }
 
 export function verifyToken(token: string): TokenPayload {

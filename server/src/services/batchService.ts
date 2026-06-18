@@ -38,6 +38,10 @@ function validateImage(mimeType: string) {
   return { ok: true as const }
 }
 
+function fail(check: { code: string; message: string }) {
+  return { success: false as const, code: check.code, message: check.message }
+}
+
 export function serializeBatch(batch: {
   id: string
   jobType: string
@@ -81,27 +85,27 @@ export function serializeBatch(batch: {
 
 export async function runGenerationBatch(user: User, input: BatchInput) {
   const serviceCheck = await assertGenerationEnabled()
-  if (!serviceCheck.ok) return serviceCheck
+  if (!serviceCheck.ok) return fail(serviceCheck)
 
   if (user.status !== 'active') {
     return { success: false as const, code: 'USER_DISABLED', message: '账号已被禁用。' }
   }
 
   const deviceCheck = await assertDeviceAllowed(user.id, input.deviceId)
-  if (!deviceCheck.ok) return deviceCheck
+  if (!deviceCheck.ok) return fail(deviceCheck)
 
   const imageCheck = validateImage(input.mimeType)
-  if (!imageCheck.ok) return imageCheck
+  if (!imageCheck.ok) return fail(imageCheck)
 
   const poseCheck = validatePoses(user, input.poses)
-  if (!poseCheck.ok) return poseCheck
+  if (!poseCheck.ok) return fail(poseCheck)
 
   if (input.jobType === 'full_batch') {
     const slotCheck = await assertCanCreateCustomPet(user)
-    if (!slotCheck.ok) return slotCheck
+    if (!slotCheck.ok) return fail(slotCheck)
   } else if (input.jobType === 'pose_completion') {
     const regenCheck = await assertCanRegenerateCustomPet(user)
-    if (!regenCheck.ok) return regenCheck
+    if (!regenCheck.ok) return fail(regenCheck)
   }
 
   const imageApiCheck = assertImageApiConfigured()
@@ -116,7 +120,7 @@ export async function runGenerationBatch(user: User, input: BatchInput) {
   const deductQuota = input.jobType === 'full_batch'
   if (deductQuota) {
     const quotaCheck = await canConsumeGeneration(user)
-    if (!quotaCheck.ok) return quotaCheck
+    if (!quotaCheck.ok) return fail(quotaCheck)
   }
 
   const batch = await prisma.generationBatch.create({

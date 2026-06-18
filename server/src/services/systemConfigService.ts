@@ -59,6 +59,61 @@ function serializeValue(value: unknown): string {
   return String(value)
 }
 
+function asInteger(
+  key: keyof SystemConfigValues,
+  value: unknown,
+  min: number,
+  max: number
+): number {
+  const num = Number(value)
+  if (!Number.isInteger(num) || num < min || num > max) {
+    throw new Error(`${key} 必须是 ${min} 到 ${max} 之间的整数。`)
+  }
+  return num
+}
+
+function asBoolean(key: keyof SystemConfigValues, value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (value === 'true') return true
+  if (value === 'false') return false
+  throw new Error(`${key} 必须是布尔值。`)
+}
+
+function normalizePatch(patch: Partial<SystemConfigValues>): Partial<SystemConfigValues> {
+  const next: Partial<SystemConfigValues> = {}
+  const entries = Object.entries(patch) as Array<[keyof SystemConfigValues, unknown]>
+  for (const [key, value] of entries) {
+    if (value === undefined) continue
+    if (!(key in KEY_MAP)) throw new Error(`不支持的配置项：${String(key)}`)
+
+    switch (key) {
+      case 'freeDailyGenerationLimit':
+      case 'proDailyGenerationLimit':
+      case 'freeDailyChatLimit':
+      case 'proDailyChatLimit':
+        next[key] = asInteger(key, value, 0, 1000)
+        break
+      case 'jobTimeoutMs':
+        next[key] = asInteger(key, value, 5_000, 300_000)
+        break
+      case 'registrationOpen':
+      case 'generationServiceEnabled':
+      case 'chatServiceEnabled':
+      case 'paymentEnabled':
+      case 'mockPaymentEnabled':
+        next[key] = asBoolean(key, value)
+        break
+      case 'maintenanceNotice': {
+        const text = String(value ?? '').trim()
+        if (text.length > 500) throw new Error('maintenanceNotice 不能超过 500 个字符。')
+        next[key] = text
+        break
+      }
+    }
+  }
+  return next
+}
+
 export async function getSystemConfig(): Promise<SystemConfigValues> {
   if (cache && Date.now() < cache.expiresAt) return cache.values
 
@@ -93,7 +148,8 @@ export async function updateSystemConfig(
   patch: Partial<SystemConfigValues>,
   adminId: string
 ): Promise<SystemConfigValues> {
-  const entries = Object.entries(patch) as Array<[keyof SystemConfigValues, unknown]>
+  const safePatch = normalizePatch(patch)
+  const entries = Object.entries(safePatch) as Array<[keyof SystemConfigValues, unknown]>
   for (const [key, value] of entries) {
     if (value === undefined) continue
     const dbKey = KEY_MAP[key]

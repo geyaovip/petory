@@ -34,8 +34,16 @@ adminRoutes.get('/system/config', async (c) => {
 
 adminRoutes.patch('/system/config', requireAdminWrite, async (c) => {
   const admin = c.get('admin')!
-  const body = await c.req.json<Partial<SystemConfigValues>>()
-  const next = await updateSystemConfig(body, admin.id)
+  const body = await c.req.json<Partial<SystemConfigValues>>().catch(() => ({}))
+  let next
+  try {
+    next = await updateSystemConfig(body, admin.id)
+  } catch (error) {
+    return c.json(
+      { success: false, message: error instanceof Error ? error.message : '配置无效。' },
+      400
+    )
+  }
   await logAdminAction({
     adminId: admin.id,
     adminEmail: admin.email,
@@ -231,7 +239,7 @@ adminRoutes.get('/users/:id', async (c) => {
 
 adminRoutes.post('/users/:id/disable', requireAdminWrite, async (c) => {
   const admin = c.get('admin')!
-  const userId = c.req.param('id')
+  const userId = c.req.param('id')!
   await prisma.user.update({
     where: { id: userId },
     data: { status: 'disabled' }
@@ -248,7 +256,7 @@ adminRoutes.post('/users/:id/disable', requireAdminWrite, async (c) => {
 
 adminRoutes.post('/users/:id/enable', requireAdminWrite, async (c) => {
   const admin = c.get('admin')!
-  const userId = c.req.param('id')
+  const userId = c.req.param('id')!
   await prisma.user.update({
     where: { id: userId },
     data: { status: 'active' }
@@ -265,12 +273,15 @@ adminRoutes.post('/users/:id/enable', requireAdminWrite, async (c) => {
 
 adminRoutes.post('/users/:id/quota/grant', requireAdminWrite, async (c) => {
   const admin = c.get('admin')!
-  const body = await c.req.json<{ amount?: number; reason?: string }>()
-  const amount = Number(body.amount ?? 0)
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return c.json({ success: false, message: 'amount 必须为正整数。' }, 400)
+  const body = (await c.req.json<{ amount?: number; reason?: string }>().catch(() => ({}))) as {
+    amount?: number
+    reason?: string
   }
-  const userId = c.req.param('id')
+  const amount = Number(body.amount ?? 0)
+  if (!Number.isInteger(amount) || amount <= 0 || amount > 1000) {
+    return c.json({ success: false, message: 'amount 必须是 1 到 1000 之间的整数。' }, 400)
+  }
+  const userId = c.req.param('id')!
   await grantQuota(userId, amount, admin.id, body.reason ?? 'manual grant')
   await logAdminAction({
     adminId: admin.id,
