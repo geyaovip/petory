@@ -33,6 +33,7 @@ Petory 是一个 Electron 桌面应用，仓库里同时放了客户端、服务
 | 官网域名 | `src/shared/constants.ts` |
 | 更新清单 | `scripts/sync-release-manifest.mjs` |
 | 官网下载 manifest | `website/releases/latest.json` |
+| 官网 SEO / 收录 | `website/README.md`（Search Console 与 sitemap） |
 | 自动更新 feed | `src/shared/constants.ts` + `electron/main/updateService.ts` |
 | 管理端部署 | `docs/backend/DEPLOY.md` |
 | 云服务器部署 | `deploy/server/README.md` |

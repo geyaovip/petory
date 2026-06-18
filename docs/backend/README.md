@@ -2,7 +2,7 @@
 
 管理端（API Server + 运营后台）用于支撑 **Electron 客户端** 的账号、额度、AI 生成代理与运营管理。桌宠展示、拖拽、番茄钟、成长等能力仍在客户端完成。
 
-> **当前状态**：服务端 **1.4.0** + PostgreSQL；客户端 **2.4.1**。交付记录见 [客户端 C2.x](../releases/client/) 与 [服务端 B1.x](../releases/server/)。
+> **当前状态**：服务端 **1.4.0** + PostgreSQL；客户端 **2.4.25**。交付记录见 [客户端 C2.x](../releases/client/) 与 [服务端 B1.x](../releases/server/)。
 
 ## 文档索引
 
